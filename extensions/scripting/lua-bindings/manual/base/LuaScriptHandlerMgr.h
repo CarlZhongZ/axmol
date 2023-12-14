@@ -315,6 +315,10 @@ public:
      */
     ScriptHandlerMgr::HandlerType addCustomHandler(void* object, int handler);
 
+    void onRestart() {
+        _mapObjectHandlers.clear();
+    }
+
 private:
     void init(void);
     static ScriptHandlerMgr* _scriptHandlerMgr;

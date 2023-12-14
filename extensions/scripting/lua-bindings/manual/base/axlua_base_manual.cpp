@@ -3605,8 +3605,10 @@ static int toaxlua_FileUtils_getDataFromFile(lua_State* tolua_S)
         if (ok)
         {
             auto data = FileUtils::getInstance()->getDataFromFile(arg0);
-            if (!data.isNull())
-                lua_pushlstring(tolua_S, reinterpret_cast<const char*>(data.getBytes()),
+            if (data.isNull())
+                return 0;
+
+            lua_pushlstring(tolua_S, reinterpret_cast<const char*>(data.getBytes()),
                                 static_cast<size_t>(data.getSize()));
 
             return 1;
