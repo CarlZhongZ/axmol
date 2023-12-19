@@ -105,7 +105,8 @@ def _defaultIncludePath():
     '''
     llvmInclude = _find_llvm_include_path()
     toolchainInclude = _find_toolchain_include_path()
-    exactIncludes =  llvmInclude + " " + toolchainInclude
+    exactIncludes =  llvmInclude + " " + toolchainInclude + " -IC:/projects/axmol/thirdparty/lua/plainlua"
+
     return exactIncludes
 
 
@@ -230,23 +231,23 @@ def main():
 
         cmd_args = {
                     'ax_base.ini' : ('ax_base', 'axlua_base_auto'), \
-                    'ax_backend.ini' : ('ax_backend', 'axlua_backend_auto'), \
-                    'ax_extension.ini' : ('ax_extension', 'axlua_extension_auto'), \
-                    'ax_ui.ini' : ('ax_ui', 'axlua_ui_auto'), \
-                    'ax_studio.ini' : ('ax_studio', 'axlua_studio_auto'), \
-                    'ax_spine.ini' : ('ax_spine', 'axlua_spine_auto'), \
-                    'ax_physics.ini' : ('ax_physics', 'axlua_physics_auto'), \
-                    'ax_video.ini' : ('ax_video', 'axlua_video_auto'), \
-                    'ax_controller.ini' : ('ax_controller', 'axlua_controller_auto'), \
-                    'ax_3d.ini': ('ax_3d', 'axlua_3d_auto'), \
-                    'ax_audioengine.ini': ('ax_audioengine', 'axlua_audioengine_auto'), \
-                    'ax_csloader.ini' : ('ax_csloader', 'axlua_csloader_auto'), \
-                    'ax_webview.ini' : ('ax_webview', 'axlua_webview_auto'), \
-                    'ax_physics3d.ini' : ('ax_physics3d', 'axlua_physics3d_auto'), \
-                    'ax_navmesh.ini' : ('ax_navmesh', 'axlua_navmesh_auto'), \
+                    # 'ax_backend.ini' : ('ax_backend', 'axlua_backend_auto'), \
+                    # 'ax_extension.ini' : ('ax_extension', 'axlua_extension_auto'), \
+                    # 'ax_ui.ini' : ('ax_ui', 'axlua_ui_auto'), \
+                    # 'ax_studio.ini' : ('ax_studio', 'axlua_studio_auto'), \
+                    # 'ax_spine.ini' : ('ax_spine', 'axlua_spine_auto'), \
+                    # 'ax_physics.ini' : ('ax_physics', 'axlua_physics_auto'), \
+                    # 'ax_video.ini' : ('ax_video', 'axlua_video_auto'), \
+                    # 'ax_controller.ini' : ('ax_controller', 'axlua_controller_auto'), \
+                    # 'ax_3d.ini': ('ax_3d', 'axlua_3d_auto'), \
+                    # 'ax_audioengine.ini': ('ax_audioengine', 'axlua_audioengine_auto'), \
+                    # 'ax_csloader.ini' : ('ax_csloader', 'axlua_csloader_auto'), \
+                    # 'ax_webview.ini' : ('ax_webview', 'axlua_webview_auto'), \
+                    # 'ax_physics3d.ini' : ('ax_physics3d', 'axlua_physics3d_auto'), \
+                    # 'ax_navmesh.ini' : ('ax_navmesh', 'axlua_navmesh_auto'), \
                     }
         target = 'lua'
-        generator_py = '%s/generator.py' % cxx_generator_root
+        generator_py = '%s/generatorLuaClassDesc.py' % cxx_generator_root
         for key in cmd_args.keys():
             args = cmd_args[key]
             cfg = '%s/%s' % (tolua_root, key)
