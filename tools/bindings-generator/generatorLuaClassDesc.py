@@ -543,7 +543,7 @@ class NativeType(object):
                     lambda_display_name = lambda_display_name.replace("::__ndk1", "")
                     lambda_display_name = normalize_type_str(lambda_display_name)
                     nt.namespaced_name = lambda_display_name
-                    r = re.compile('function<([^\s]+).*\((.*)\)>').search(nt.namespaced_name)
+                    r = re.compile('function<([^\\s]+).*\\((.*)\\)>').search(nt.namespaced_name)
                     (ret_type, params) = r.groups()
                     params = filter(None, params.split(", "))
 
@@ -755,7 +755,7 @@ class NativeField(object):
         self.name = cursor.displayname
         self.kind = cursor.type.kind
         self.location = cursor.location
-        member_field_re = re.compile('m_(\w+)')
+        member_field_re = re.compile(r'm_(\\w+)')
         match = member_field_re.match(self.name)
         self.signature_name = self.name
         self.ntype  = NativeType.from_type(cursor.type)
@@ -781,7 +781,7 @@ class NativeField(object):
             self.signature_name = str(tpl)
         tpl = Template(file=os.path.join(gen.target, "templates", "public_field.c"),
                        searchList=[current_class, self])
-        gen.impl_file.write(str(tpl))
+        # gen.impl_file.write(str(tpl))
 
 # return True if found default argument.
 def iterate_param_node(param_node, depth=1):
@@ -845,18 +845,18 @@ class NativeFunction(object):
             return ""
 
         regular_replace_list = [
-            ("(\s)*//!",""),
-            ("(\s)*//",""),
-            ("(\s)*/\*\*",""),
-            ("(\s)*/\*",""),
-            ("\*/",""),
+            ("(\\s)*//!",""),
+            ("(\\s)*//",""),
+            ("(\\s)*/\\*\\*",""),
+            ("(\\s)*/\\*",""),
+            ("\\*/",""),
             ("\r\n", "\n"),
-            ("\n(\s)*\*", "\n"),
-            ("\n(\s)*@","\n"),
-            ("\n(\s)*","\n"),
-            ("\n(\s)*\n", "\n"),
-            ("^(\s)*\n",""),
-            ("\n(\s)*$", ""),
+            ("\n(\\s)*\\*", "\n"),
+            ("\n(\\s)*@","\n"),
+            ("\n(\\s)*","\n"),
+            ("\n(\\s)*\n", "\n"),
+            ("^(\\s)*\n",""),
+            ("\n(\\s)*$", ""),
             ("\n","<br>\n"),
             ("\n", "\n-- ")
         ]
@@ -870,56 +870,17 @@ class NativeFunction(object):
     def generate_code(self, current_class=None, generator=None, is_override=False, is_ctor=False):
         self.is_ctor = is_ctor
         gen = current_class.generator if current_class else generator
-        config = gen.config
-        if not is_ctor:
-            tpl = Template(file=os.path.join(gen.target, "templates", "function.h"),
-                        searchList=[current_class, self])
-            if not is_override:
-                gen.head_file.write(str(tpl))
-        if self.static:
-            if 'sfunction' in config['definitions']:
-                tpl = Template(config['definitions']['sfunction'],
-                                    searchList=[current_class, self])
-                self.signature_name = str(tpl)
-            tpl = Template(file=os.path.join(gen.target, "templates", "sfunction.c"),
-                            searchList=[current_class, self])
-        else:
-            if not self.is_constructor:
-                if 'ifunction' in config['definitions']:
-                    tpl = Template(config['definitions']['ifunction'],
-                                    searchList=[current_class, self])
-                    self.signature_name = str(tpl)
-            else:
-                if 'constructor' in config['definitions']:
-                    if not is_ctor:
-                        tpl = Template(config['definitions']['constructor'],
-                                    searchList=[current_class, self])
-                    else:
-                        tpl = Template(config['definitions']['ctor'],
-                                    searchList=[current_class, self])
-                    self.signature_name = str(tpl)
-            if self.is_constructor and gen.script_type == "spidermonkey" :
-                if not is_ctor:
-                    tpl = Template(file=os.path.join(gen.target, "templates", "constructor.c"),
-                                                searchList=[current_class, self])
-                else:
-                    tpl = Template(file=os.path.join(gen.target, "templates", "ctor.c"),
-                                                searchList=[current_class, self])
-            else :
-                tpl = Template(file=os.path.join(gen.target, "templates", "ifunction.c"),
-                                searchList=[current_class, self])
-        if not is_override:
-            gen.impl_file.write(str(tpl))
-        # if not is_ctor:
-        #     apidoc_function_script = Template(file=os.path.join(gen.target,
-        #                                                     "templates",
-        #                                                     "apidoc_function.script"),
-        #                                   searchList=[current_class, self])
-        #     if gen.script_type == "spidermonkey":
-        #         gen.doc_file.write(str(apidoc_function_script))
-        #     else:
-        #         if gen.script_type == "lua" and current_class != None :
-        #             current_class.doc_func_file.write(str(apidoc_function_script))
+
+        if self.is_constructor or self.not_supported or self.is_override:
+            print('skip %s::%s' % (current_class.namespace_name, self.func_name))
+            return
+
+        print('method', self.func_name, self.static, len(self.implementations), self.ret_type.whole_name)
+        i = 0
+        for argument in self.arguments:
+            print(argument.whole_name, argument.is_enum, argument.is_numeric)
+            i += 1
+        gen.impl_file.write('\n')
 
 
 class NativeOverloadedFunction(object):
@@ -943,18 +904,18 @@ class NativeOverloadedFunction(object):
             return ""
 
         regular_replace_list = [
-            ("(\s)*//!",""),
-            ("(\s)*//",""),
-            ("(\s)*/\*\*",""),
-            ("(\s)*/\*",""),
-            ("\*/",""),
+            ("(\\s)*//!",""),
+            ("(\\s)*//",""),
+            ("(\\s)*/\\*\\*",""),
+            ("(\\s)*/\\*",""),
+            ("\\*/",""),
             ("\r\n", "\n"),
-            ("\n(\s)*\*", "\n"),
-            ("\n(\s)*@","\n"),
-            ("\n(\s)*","\n"),
-            ("\n(\s)*\n", "\n"),
-            ("^(\s)*\n",""),
-            ("\n(\s)*$", ""),
+            ("\n(\\s)*\\*", "\n"),
+            ("\n(\\s)*@","\n"),
+            ("\n(\\s)*","\n"),
+            ("\n(\\s)*\n", "\n"),
+            ("^(\\s)*\n",""),
+            ("\n(\\s)*$", ""),
             ("\n","<br>\n"),
             ("\n", "\n-- ")
         ]
@@ -1002,8 +963,8 @@ class NativeOverloadedFunction(object):
                     self.signature_name = str(tpl)
             tpl = Template(file=os.path.join(gen.target, "templates", "ifunction_overloaded.c"),
                             searchList=[current_class, self])
-        if not is_override:
-            gen.impl_file.write(str(tpl))
+        # if not is_override:
+        #     gen.impl_file.write(str(tpl))
 
         # if current_class != None and not is_ctor:
         #     if gen.script_type == "lua":
@@ -1098,6 +1059,9 @@ class NativeClass(object):
                 ret.append({"name": name, "impl": impl})
         return ret
 
+    def _dumpClassName(self):
+        return self.namespaced_class_name.replace('ax::', 'cc.').replace('::', '.')
+
     def generate_code(self):
         '''
         actually generate the code. it uses the current target templates/rules in order to
@@ -1107,18 +1071,19 @@ class NativeClass(object):
         if not self.is_ref_class:
             self.is_ref_class = self._is_ref_class()
 
+        dumpClassName = self._dumpClassName()
         if len(self.parents) == 0:
-            self.generator.impl_file.write('\n\n---@class %s' % self.namespaced_class_name)
+            self.generator.impl_file.write('\n\n---@class %s' % dumpClassName)
         else:
-            self.generator.impl_file.write('\n\n---@class %s' % self.namespaced_class_name)
+            self.generator.impl_file.write('\n\n---@class %s: %s' % (dumpClassName, self.parents[0]._dumpClassName()))
 
 
-        # for m in self.methods_clean():
-        #     m['impl'].generate_code(self)
-        # for m in self.static_methods_clean():
-        #     m['impl'].generate_code(self)
-        # for m in self.override_methods_clean():
-        #     m['impl'].generate_code(self, is_override = True)
+        for m in self.methods_clean():
+            m['impl'].generate_code(self)
+        for m in self.static_methods_clean():
+            m['impl'].generate_code(self)
+        for m in self.override_methods_clean():
+            m['impl'].generate_code(self, is_override = True)
 
         # for m in self.public_fields:
         #     if self.generator.should_bind_field(self.class_name, m.name):
@@ -1304,7 +1269,7 @@ class Generator(object):
             for skip in list_of_skips:
                 class_name, methods = skip.split("::")
                 self.skip_classes[class_name] = []
-                match = re.match("\[([^]]+)\]", methods)
+                match = re.match("\\[([^]]+)\\]", methods)
                 if match:
                     self.skip_classes[class_name] = match.group(1).split(" ")
                 else:
@@ -1314,7 +1279,7 @@ class Generator(object):
             for field in list_of_fields:
                 class_name, fields = field.split("::")
                 self.bind_fields[class_name] = []
-                match = re.match("\[([^]]+)\]", fields)
+                match = re.match("\\[([^]]+)\\]", fields)
                 if match:
                     self.bind_fields[class_name] = match.group(1).split(" ")
                 else:
@@ -1324,7 +1289,7 @@ class Generator(object):
             for rename in list_of_function_renames:
                 class_name, methods = rename.split("::")
                 self.rename_functions[class_name] = {}
-                match = re.match("\[([^]]+)\]", methods)
+                match = re.match("\\[([^]]+)\\]", methods)
                 if match:
                     list_of_methods = match.group(1).split(" ")
                     for pair in list_of_methods:
