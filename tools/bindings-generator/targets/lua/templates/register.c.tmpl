@@ -1,13 +1,15 @@
-#set has_constructor = False
-#if 'constructor' in $current_class.methods
-#set has_constructor = True
-${current_class.methods.constructor.generate_code($current_class)}
-#end if
 #
 #set generator = $current_class.generator
 #set methods = $current_class.methods_clean()
 #set st_methods = $current_class.static_methods_clean()
 #
+#
+
+#if $generator.script_control_cpp and $current_class.has_constructor
+${current_class.methods.constructor.generate_code($current_class)}
+#end if
+
+#if $generator.script_control_cpp and $current_class.has_constructor
 static int lua_${generator.prefix}_${current_class.class_name}_finalize(lua_State* tolua_S)
 {
     printf("luabindings: finalizing LUA object (${current_class.class_name})");
@@ -37,6 +39,7 @@ static int lua_${generator.prefix}_${current_class.class_name}_finalize(lua_Stat
 #end if
     return 0;
 }
+#end if
 
 int lua_register_${generator.prefix}_${current_class.class_name}(lua_State* tolua_S)
 {
@@ -56,7 +59,7 @@ int lua_register_${generator.prefix}_${current_class.class_name}(lua_State* tolu
     #end if
 
     tolua_beginmodule(tolua_S,"${current_class.class_name}");
-    #if has_constructor
+    #if $generator.script_control_cpp and $current_class.has_constructor
         tolua_function(tolua_S,"new",lua_${generator.prefix}_${current_class.class_name}_constructor);
     #end if
     #for m in methods
