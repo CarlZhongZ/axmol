@@ -15,6 +15,42 @@ from Cheetah.Template import Template
 
 from configparser import ConfigParser
 
+g_config = None
+
+luaTypeInfo = {
+    'bool': 'boolean',
+    'std::string': 'string',
+    'std::string_view': 'string',
+    'std::vector<std::string>': 'string[]',
+    'std::vector<std::string_view>': 'string[]',
+}
+
+sortedKeys = []
+def getSortedLuaTransKeys():
+    if not sortedKeys:
+        keys = g_config['conversions']['ns_map'].keys()
+        for k in keys:
+            sortedKeys.append(k)
+        sortedKeys.sort(reverse=True, key=lambda v: len(v))
+        print('sortedKeys', sortedKeys)
+    return sortedKeys
+
+def transTypeNameToLua(nameSpaceTypeName):
+    ret = nameSpaceTypeName
+    for k in getSortedLuaTransKeys():
+        if nameSpaceTypeName.startswith(k):
+            v = g_config['conversions']['ns_map'][k]
+            ret = ret.replace(k, v).replace('::', '.')
+            break
+
+    ret = luaTypeInfo.get(ret, ret).replace('*', '')
+    if ret.startswith('ax.Vector<'):
+        ret = ret[10:-2] + '[]'
+
+    if ret.find('::') != -1 or ret.find('<') != -1:
+        print('not parsed type:', ret, nameSpaceTypeName)
+    return ret
+
 type_map = {
     cindex.TypeKind.VOID        : "void",
     cindex.TypeKind.BOOL        : "bool",
@@ -746,6 +782,18 @@ class NativeType(object):
     def __str__(self):
         return  self.canonical_type.whole_name if None != self.canonical_type else self.whole_name
 
+    @property
+    def luaType(self):
+        if self.is_numeric:
+            return 'number'
+        if self.is_function:
+            return 'fun()'
+        elif self.is_object:
+            if self.canonical_type:
+                return transTypeNameToLua(self.canonical_type.namespaced_name)
+
+        return transTypeNameToLua(self.namespaced_name)
+
 class NativeField(object):
     def __init__(self, cursor):
         cursor = cursor.canonical
@@ -863,9 +911,29 @@ class NativeFunction(object):
 
         return replaceStr
 
+    def _genLuaClassDesc(self, gen):
+        gen.declare_lua_file.write('\n---@field %s fun(' % self.func_name)
+        for i in range(self.min_args):
+            argName = self.argumtntTips[i]
+            argType = self.arguments[i].luaType
+            if i > 0:
+                gen.declare_lua_file.write(', ')
+            gen.declare_lua_file.write('%s: %s' % (argName, argType))
+
+        for i in range(self.min_args, len(self.arguments)):
+            argName = self.argumtntTips[i]
+            argType = self.arguments[i].luaType
+            if i > 0:
+                gen.declare_lua_file.write(', ')
+            gen.declare_lua_file.write('%s?: %s' % (argName, argType))
+        gen.declare_lua_file.write('): ')
+        gen.declare_lua_file.write(self.ret_type.luaType)
+
     def generate_code(self, current_class, is_override=False):
         gen = current_class.generator
         config = gen.config
+
+        self._genLuaClassDesc(gen)
 
         if self.static:
             self.signature_name = str(Template(config['definitions']['sfunction'],
@@ -933,6 +1001,10 @@ class NativeOverloadedFunction(object):
     def generate_code(self, current_class=None, is_override=False):
         gen = current_class.generator
         config = gen.config
+
+        for impl in self.implementations:
+            impl._genLuaClassDesc(gen)
+
         static = self.implementations[0].static
 
         if static:
@@ -980,6 +1052,10 @@ class NativeClass(object):
         self.namespaced_class_name = get_namespaced_name(cursor)
         self.namespace_name        = get_namespace_name(cursor)
         self.parse()
+
+    @property
+    def lua_class_name(self):
+        return transTypeNameToLua(self.namespace_name + self.class_name)
 
     @property
     def underlined_class_name(self):
@@ -1038,14 +1114,11 @@ class NativeClass(object):
         if not self.is_ref_class:
             self.is_ref_class = self._is_ref_class()
 
-        config = self.generator.config
-        prelude_h = Template(file=os.path.join(self.generator.target, "templates", "prelude.h.tmpl"),
-                            searchList=[{"current_class": self}])
-        prelude_c = Template(file=os.path.join(self.generator.target, "templates", "prelude.c.tmpl"),
-                            searchList=[{"current_class": self}])
-
-        self.generator.head_file.write(str(prelude_h))
-        self.generator.impl_file.write(str(prelude_c))
+        if self.parents:
+            parent = self.parents[0]
+            self.generator.declare_lua_file.write('\n\n---@class %s: %s' % (self.lua_class_name, parent.lua_class_name))
+        else:
+            self.generator.declare_lua_file.write('\n\n---@class %s' % (self.lua_class_name))
 
         for m in self.methods_clean():
             m['impl'].generate_code(self)
@@ -1438,20 +1511,20 @@ class Generator(object):
         return sorted_parents
 
     def generate_code(self):
-        # must read the yaml file first
-        # stream = open(os.path.join(self.target, "conversions.yaml"), "r")
         with open(os.path.join(self.target, "conversions.yaml"), 'r') as stream:
             self.config = yaml.safe_load(stream)
-        # data = yaml.load(stream)
-        # self.config = data
+
+        global g_config
+        g_config = self.config
+
         implfilepath = os.path.join(self.outdir, self.out_file + ".cpp")
         headfilepath = os.path.join(self.outdir, self.out_file + ".hpp")
 
-        # docfiledir   = self.outdir + "/api"
+        declareLuaClassFilePath = os.path.join(self.outdir, self.out_file + ".lua")
 
         self.impl_file = open(implfilepath, "wt+", encoding='utf8', newline='\n')
         self.head_file = open(headfilepath, "wt+", encoding='utf8', newline='\n')
-        # self.doc_file = open(docfilepath, "w+")
+        self.declare_lua_file = open(declareLuaClassFilePath, "wt+", encoding='utf8', newline='\n')
 
         layout_h = Template(file=os.path.join(self.target, "templates", "layout_head.h.tmpl"),
                             searchList=[self])

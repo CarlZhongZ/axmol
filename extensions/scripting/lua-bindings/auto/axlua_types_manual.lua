@@ -1,0 +1,2 @@
+---@alias ax.ValueMap table<string, any>
+---@alias ax.Value any
