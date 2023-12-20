@@ -247,7 +247,7 @@ def main():
                     'ax_navmesh.ini' : ('ax_navmesh', 'axlua_navmesh_auto'), \
                     }
         target = 'lua'
-        generator_py = '%s/generator.py' % cxx_generator_root
+        generator_py = '%s/generatorLuaClassDesc.py' % cxx_generator_root
         for key in cmd_args.keys():
             args = cmd_args[key]
             cfg = '%s/%s' % (tolua_root, key)
