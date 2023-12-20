@@ -755,7 +755,7 @@ class NativeField(object):
         self.name = cursor.displayname
         self.kind = cursor.type.kind
         self.location = cursor.location
-        member_field_re = re.compile(r'm_(\\w+)')
+        member_field_re = re.compile('m_(\\w+)')
         match = member_field_re.match(self.name)
         self.signature_name = self.name
         self.ntype  = NativeType.from_type(cursor.type)

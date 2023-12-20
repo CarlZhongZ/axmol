@@ -543,7 +543,7 @@ class NativeType(object):
                     lambda_display_name = lambda_display_name.replace("::__ndk1", "")
                     lambda_display_name = normalize_type_str(lambda_display_name)
                     nt.namespaced_name = lambda_display_name
-                    r = re.compile('function<([^\s]+).*\((.*)\)>').search(nt.namespaced_name)
+                    r = re.compile('function<([^\\s]+).*\\((.*)\\)>').search(nt.namespaced_name)
                     (ret_type, params) = r.groups()
                     params = filter(None, params.split(", "))
 
@@ -659,7 +659,7 @@ class NativeType(object):
             keys.append("int")
 
         if self.is_function:
-            tpl = Template(file=os.path.join(generator.target, "templates", "lambda.c"),
+            tpl = Template(file=os.path.join(generator.target, "templates", "lambda.c.tmpl"),
                 searchList=[convert_opts, self])
             indent = convert_opts['level'] * "\t"
             return str(tpl).replace("\n", "\n" + indent)
@@ -755,7 +755,7 @@ class NativeField(object):
         self.name = cursor.displayname
         self.kind = cursor.type.kind
         self.location = cursor.location
-        member_field_re = re.compile('m_(\w+)')
+        member_field_re = re.compile('m_(\\w+)')
         match = member_field_re.match(self.name)
         self.signature_name = self.name
         self.ntype  = NativeType.from_type(cursor.type)
@@ -779,7 +779,7 @@ class NativeField(object):
             tpl = Template(config['definitions']['public_field'],
                                     searchList=[current_class, self])
             self.signature_name = str(tpl)
-        tpl = Template(file=os.path.join(gen.target, "templates", "public_field.c"),
+        tpl = Template(file=os.path.join(gen.target, "templates", "public_field.c.tmpl"),
                        searchList=[current_class, self])
         gen.impl_file.write(str(tpl))
 
@@ -845,18 +845,18 @@ class NativeFunction(object):
             return ""
 
         regular_replace_list = [
-            ("(\s)*//!",""),
-            ("(\s)*//",""),
-            ("(\s)*/\*\*",""),
-            ("(\s)*/\*",""),
-            ("\*/",""),
+            ("(\\s)*//!",""),
+            ("(\\s)*//",""),
+            ("(\\s)*/\\*\\*",""),
+            ("(\\s)*/\\*",""),
+            ("\\*/",""),
             ("\r\n", "\n"),
-            ("\n(\s)*\*", "\n"),
-            ("\n(\s)*@","\n"),
-            ("\n(\s)*","\n"),
-            ("\n(\s)*\n", "\n"),
-            ("^(\s)*\n",""),
-            ("\n(\s)*$", ""),
+            ("\n(\\s)*\\*", "\n"),
+            ("\n(\\s)*@","\n"),
+            ("\n(\\s)*","\n"),
+            ("\n(\\s)*\n", "\n"),
+            ("^(\\s)*\n",""),
+            ("\n(\\s)*$", ""),
             ("\n","<br>\n"),
             ("\n", "\n-- ")
         ]
@@ -872,7 +872,7 @@ class NativeFunction(object):
         gen = current_class.generator if current_class else generator
         config = gen.config
         if not is_ctor:
-            tpl = Template(file=os.path.join(gen.target, "templates", "function.h"),
+            tpl = Template(file=os.path.join(gen.target, "templates", "function.h.tmpl"),
                         searchList=[current_class, self])
             if not is_override:
                 gen.head_file.write(str(tpl))
@@ -881,7 +881,7 @@ class NativeFunction(object):
                 tpl = Template(config['definitions']['sfunction'],
                                     searchList=[current_class, self])
                 self.signature_name = str(tpl)
-            tpl = Template(file=os.path.join(gen.target, "templates", "sfunction.c"),
+            tpl = Template(file=os.path.join(gen.target, "templates", "sfunction.c.tmpl"),
                             searchList=[current_class, self])
         else:
             if not self.is_constructor:
@@ -900,13 +900,13 @@ class NativeFunction(object):
                     self.signature_name = str(tpl)
             if self.is_constructor and gen.script_type == "spidermonkey" :
                 if not is_ctor:
-                    tpl = Template(file=os.path.join(gen.target, "templates", "constructor.c"),
+                    tpl = Template(file=os.path.join(gen.target, "templates", "constructor.c.tmpl"),
                                                 searchList=[current_class, self])
                 else:
-                    tpl = Template(file=os.path.join(gen.target, "templates", "ctor.c"),
+                    tpl = Template(file=os.path.join(gen.target, "templates", "ctor.c.tmpl"),
                                                 searchList=[current_class, self])
             else :
-                tpl = Template(file=os.path.join(gen.target, "templates", "ifunction.c"),
+                tpl = Template(file=os.path.join(gen.target, "templates", "ifunction.c.tmpl"),
                                 searchList=[current_class, self])
         if not is_override:
             gen.impl_file.write(str(tpl))
@@ -943,18 +943,18 @@ class NativeOverloadedFunction(object):
             return ""
 
         regular_replace_list = [
-            ("(\s)*//!",""),
-            ("(\s)*//",""),
-            ("(\s)*/\*\*",""),
-            ("(\s)*/\*",""),
-            ("\*/",""),
+            ("(\\s)*//!",""),
+            ("(\\s)*//",""),
+            ("(\\s)*/\\*\\*",""),
+            ("(\\s)*/\\*",""),
+            ("\\*/",""),
             ("\r\n", "\n"),
-            ("\n(\s)*\*", "\n"),
-            ("\n(\s)*@","\n"),
-            ("\n(\s)*","\n"),
-            ("\n(\s)*\n", "\n"),
-            ("^(\s)*\n",""),
-            ("\n(\s)*$", ""),
+            ("\n(\\s)*\\*", "\n"),
+            ("\n(\\s)*@","\n"),
+            ("\n(\\s)*","\n"),
+            ("\n(\\s)*\n", "\n"),
+            ("^(\\s)*\n",""),
+            ("\n(\\s)*$", ""),
             ("\n","<br>\n"),
             ("\n", "\n-- ")
         ]
@@ -974,7 +974,7 @@ class NativeOverloadedFunction(object):
         config = gen.config
         static = self.implementations[0].static
         if not is_ctor:
-            tpl = Template(file=os.path.join(gen.target, "templates", "function.h"),
+            tpl = Template(file=os.path.join(gen.target, "templates", "function.h.tmpl"),
                         searchList=[current_class, self])
             if not is_override:
                 gen.head_file.write(str(tpl))
@@ -983,7 +983,7 @@ class NativeOverloadedFunction(object):
                 tpl = Template(config['definitions']['sfunction'],
                                 searchList=[current_class, self])
                 self.signature_name = str(tpl)
-            tpl = Template(file=os.path.join(gen.target, "templates", "sfunction_overloaded.c"),
+            tpl = Template(file=os.path.join(gen.target, "templates", "sfunction_overloaded.c.tmpl"),
                             searchList=[current_class, self])
         else:
             if not self.is_constructor:
@@ -1000,7 +1000,7 @@ class NativeOverloadedFunction(object):
                         tpl = Template(config['definitions']['ctor'],
                                         searchList=[current_class, self])
                     self.signature_name = str(tpl)
-            tpl = Template(file=os.path.join(gen.target, "templates", "ifunction_overloaded.c"),
+            tpl = Template(file=os.path.join(gen.target, "templates", "ifunction_overloaded.c.tmpl"),
                             searchList=[current_class, self])
         if not is_override:
             gen.impl_file.write(str(tpl))
@@ -1108,9 +1108,9 @@ class NativeClass(object):
             self.is_ref_class = self._is_ref_class()
 
         config = self.generator.config
-        prelude_h = Template(file=os.path.join(self.generator.target, "templates", "prelude.h"),
+        prelude_h = Template(file=os.path.join(self.generator.target, "templates", "prelude.h.tmpl"),
                             searchList=[{"current_class": self}])
-        prelude_c = Template(file=os.path.join(self.generator.target, "templates", "prelude.c"),
+        prelude_c = Template(file=os.path.join(self.generator.target, "templates", "prelude.c.tmpl"),
                             searchList=[{"current_class": self}])
         # apidoc_classhead_script = Template(file=os.path.join(self.generator.target,
         #                                                  "templates",
@@ -1139,7 +1139,7 @@ class NativeClass(object):
             if self.generator.should_bind_field(self.class_name, m.name):
                 m.generate_code(self)
         # generate register section
-        register = Template(file=os.path.join(self.generator.target, "templates", "register.c"),
+        register = Template(file=os.path.join(self.generator.target, "templates", "register.c.tmpl"),
                             searchList=[{"current_class": self}])
         # apidoc_classfoot_script = Template(file=os.path.join(self.generator.target,
         #                                                  "templates",
@@ -1326,7 +1326,7 @@ class NativeEnum(object):
         generate the right code
         '''
         # generate register section
-        register = Template(file=os.path.join(self.generator.target, "templates", "enum.c"),
+        register = Template(file=os.path.join(self.generator.target, "templates", "enum.c.tmpl"),
                             searchList=[{"current_class": self, "generator": self.generator}])
         self.generator.impl_file.write(str(register))
 
@@ -1385,7 +1385,7 @@ class Generator(object):
             for skip in list_of_skips:
                 class_name, methods = skip.split("::")
                 self.skip_classes[class_name] = []
-                match = re.match("\[([^]]+)\]", methods)
+                match = re.match("\\[([^]]+)\\]", methods)
                 if match:
                     self.skip_classes[class_name] = match.group(1).split(" ")
                 else:
@@ -1395,7 +1395,7 @@ class Generator(object):
             for field in list_of_fields:
                 class_name, fields = field.split("::")
                 self.bind_fields[class_name] = []
-                match = re.match("\[([^]]+)\]", fields)
+                match = re.match("\\[([^]]+)\\]", fields)
                 if match:
                     self.bind_fields[class_name] = match.group(1).split(" ")
                 else:
@@ -1405,7 +1405,7 @@ class Generator(object):
             for rename in list_of_function_renames:
                 class_name, methods = rename.split("::")
                 self.rename_functions[class_name] = {}
-                match = re.match("\[([^]]+)\]", methods)
+                match = re.match("\\[([^]]+)\\]", methods)
                 if match:
                     list_of_methods = match.group(1).split(" ")
                     for pair in list_of_methods:
@@ -1563,9 +1563,9 @@ class Generator(object):
         self.head_file = open(headfilepath, "wt+", encoding='utf8', newline='\n')
         # self.doc_file = open(docfilepath, "w+")
 
-        layout_h = Template(file=os.path.join(self.target, "templates", "layout_head.h"),
+        layout_h = Template(file=os.path.join(self.target, "templates", "layout_head.h.tmpl"),
                             searchList=[self])
-        layout_c = Template(file=os.path.join(self.target, "templates", "layout_head.c"),
+        layout_c = Template(file=os.path.join(self.target, "templates", "layout_head.c.tmpl"),
                             searchList=[self])
         # apidoc_ns_script = Template(file=os.path.join(self.target, "templates", "apidoc_ns.script"),
         #                         searchList=[self])
@@ -1575,9 +1575,9 @@ class Generator(object):
 
         self._parse_headers()
 
-        layout_h = Template(file=os.path.join(self.target, "templates", "layout_foot.h"),
+        layout_h = Template(file=os.path.join(self.target, "templates", "layout_foot.h.tmpl"),
                             searchList=[self])
-        layout_c = Template(file=os.path.join(self.target, "templates", "layout_foot.c"),
+        layout_c = Template(file=os.path.join(self.target, "templates", "layout_foot.c.tmpl"),
                             searchList=[self])
         self.head_file.write(str(layout_h))
         self.impl_file.write(str(layout_c))
