@@ -15,6 +15,7 @@ from Cheetah.Template import Template
 
 from configparser import ConfigParser
 
+g_generator = None
 g_config = None
 
 luaTypeInfo = {
@@ -803,6 +804,7 @@ class NativeField(object):
         self.location = cursor.location
         self.signature_name = self.name
         self.ntype  = NativeType.from_type(cursor.type)
+        print('Field', self.name, self.ntype.namespaced_name)
 
     @staticmethod
     def can_parse(ntype):
@@ -817,6 +819,15 @@ class NativeField(object):
         tpl = Template(file=os.path.join(gen.target, "templates", "public_field.c.tmpl"),
                        searchList=[current_class, self])
         gen.impl_file.write(str(tpl))
+
+    def testUseTypes(self, useTypes):
+        namespaced_name = self.ntype.namespaced_name
+        if namespaced_name not in useTypes:
+            # 嵌套扫依赖的 struct
+            useTypes.add(namespaced_name)
+            if namespaced_name in g_generator.parseStructs:
+                g_generator.parseStructs[namespaced_name].testUseTypes(useTypes)
+
 
 # return True if found default argument.
 def iterate_param_node(param_node, depth=1):
@@ -900,29 +911,9 @@ class NativeFunction(object):
 
         return replaceStr
 
-    def _genLuaClassDesc(self, gen):
-        gen.declare_lua_file.write('\n---@field %s fun(' % self.func_name)
-        for i in range(self.min_args):
-            argName = self.argumtntTips[i]
-            argType = self.arguments[i].luaType
-            if i > 0:
-                gen.declare_lua_file.write(', ')
-            gen.declare_lua_file.write('%s: %s' % (argName, argType))
-
-        for i in range(self.min_args, len(self.arguments)):
-            argName = self.argumtntTips[i]
-            argType = self.arguments[i].luaType
-            if i > 0:
-                gen.declare_lua_file.write(', ')
-            gen.declare_lua_file.write('%s?: %s' % (argName, argType))
-        gen.declare_lua_file.write('): ')
-        gen.declare_lua_file.write(self.ret_type.luaType)
-
     def generate_code(self, current_class, is_override=False):
         gen = current_class.generator
         config = gen.config
-
-        self._genLuaClassDesc(gen)
 
         if self.static:
             self.signature_name = str(Template(config['definitions']['sfunction'],
@@ -941,6 +932,11 @@ class NativeFunction(object):
                             searchList=[current_class, self])
         if not is_override:
             gen.impl_file.write(str(tpl))
+
+    def testUseTypes(self, useTypes):
+        for arg in self.arguments:
+            useTypes.add(arg.namespaced_name)
+        useTypes.add(self.ret_type.namespaced_name)
 
 class NativeOverloadedFunction(object):
     def __init__(self, func_array):
@@ -991,9 +987,6 @@ class NativeOverloadedFunction(object):
         gen = current_class.generator
         config = gen.config
 
-        for impl in self.implementations:
-            impl._genLuaClassDesc(gen)
-
         static = self.implementations[0].static
 
         if static:
@@ -1012,6 +1005,10 @@ class NativeOverloadedFunction(object):
                             searchList=[current_class, self])
         if not is_override:
             gen.impl_file.write(str(tpl))
+
+    def testUseTypes(self, useTypes):
+        for fun in self.implementations:
+            fun.testUseTypes(useTypes)
 
 class NativeClass(object):
     def __init__(self, cursor, generator):
@@ -1102,12 +1099,6 @@ class NativeClass(object):
 
         if not self.is_ref_class:
             self.is_ref_class = self._is_ref_class()
-
-        if self.parents:
-            parent = self.parents[0]
-            self.generator.declare_lua_file.write('\n\n---@class %s: %s' % (self.lua_class_name, parent.lua_class_name))
-        else:
-            self.generator.declare_lua_file.write('\n\n---@class %s' % (self.lua_class_name))
 
         for m in self.methods_clean():
             m['impl'].generate_code(self)
@@ -1248,6 +1239,14 @@ class NativeClass(object):
             # print >> sys.stderr, "unknown cursor: %s - %s" % (cursor.kind, cursor.displayname)
         return False
 
+    def testUseTypes(self, useTypes):
+        for field in self.public_fields:
+            field.testUseTypes(useTypes)
+        for (_, method) in self.methods.items():
+            method.testUseTypes(useTypes)
+        for (_, method) in self.static_methods.items():
+            method.testUseTypes(useTypes)
+            
 class NativeEnum(object):
     def __init__(self, cursor):
         # the cursor to the implementation
@@ -1298,8 +1297,15 @@ class NativeStruct(object):
         if node.kind == cindex.CursorKind.FIELD_DECL:
             self.fields.append(NativeField(node))
 
+    def testUseTypes(self, useTypes):
+        for field in self.fields:
+            field.testUseTypes(useTypes)
+
 class Generator(object):
     def __init__(self, opts):
+        global g_generator
+        g_generator = self
+
         self.index = cindex.Index.create()
         self.outdir = opts['outdir']
         print('search_paths=' + opts['search_paths'])
@@ -1331,11 +1337,8 @@ class Generator(object):
         self.cpp_headers = opts['cpp_headers']
         self.win32_clang_flags = opts['win32_clang_flags']
 
-        self.parseClasses = {}
         self.parseEnums = {}
-        self.usedEnums = set()
         self.parseStructs = {}
-        self.usedStructs = set()
 
         extend_clang_args = []
 
@@ -1505,12 +1508,8 @@ class Generator(object):
 
         implfilepath = os.path.join(self.outdir, self.out_file + ".cpp")
         headfilepath = os.path.join(self.outdir, self.out_file + ".hpp")
-
-        declareLuaClassFilePath = os.path.join(self.outdir, self.out_file + ".lua")
-
         self.impl_file = open(implfilepath, "wt+", encoding='utf8', newline='\n')
         self.head_file = open(headfilepath, "wt+", encoding='utf8', newline='\n')
-        self.declare_lua_file = open(declareLuaClassFilePath, "wt+", encoding='utf8', newline='\n')
 
         layout_h = Template(file=os.path.join(self.target, "templates", "layout_head.h.tmpl"),
                             searchList=[self])
@@ -1536,6 +1535,37 @@ class Generator(object):
 
         self.impl_file.close()
         self.head_file.close()
+
+        
+        self.processUsedEnumsAndStructs()
+
+    # 遍历注册的类, 搜索用到的 enum 和 struct
+    def processUsedEnumsAndStructs(self):
+        useTypes = set()
+        for (_, nativeClass) in self.generated_classes.items():
+            nativeClass.testUseTypes(useTypes)
+
+        for tp in useTypes.copy():
+            if tp in self.parseStructs:
+                self.parseStructs[tp].testUseTypes(useTypes)
+
+        structTypes = []
+        enumTypes = []
+        for tp in useTypes:
+            if tp in self.parseEnums:
+                enumTypes.append(tp)
+            elif tp in self.parseStructs:
+                structTypes.append(tp)
+
+        structTypes.sort()
+        enumTypes.sort()
+
+        for tp in structTypes:
+            print("struct:", tp)
+            
+        for tp in enumTypes:
+            print("enum:", tp)
+
 
     def _pretty_print(self, diagnostics):
         errors=[]
@@ -1606,17 +1636,19 @@ class Generator(object):
         elif cursor.kind == cindex.CursorKind.STRUCT_DECL:
             if cursor == cursor.type.get_declaration() and len(get_children_array_from_iter(cursor.get_children())) > 0:
                 if self._isTargetedNS(cursor):
-                    if cursor.displayname not in self.parseStructs:
+                    nsName = get_namespaced_name(cursor)
+                    if nsName not in self.parseStructs:
                         print('Struct', get_namespaced_name(cursor))
                         enum = NativeStruct(cursor)
-                        self.parseStructs[cursor.displayname] = enum
-        elif cursor.kind == cindex.CursorKind.ENUM_DECL :
+                        self.parseStructs[nsName] = enum
+        elif cursor.kind == cindex.CursorKind.ENUM_DECL:
             if cursor == cursor.type.get_declaration() and len(get_children_array_from_iter(cursor.get_children())) > 0:
                 if self._isTargetedNS(cursor):
-                    if cursor.displayname not in self.parseEnums:
-                        print('Enum', get_namespaced_name(cursor))
+                    nsName = get_namespaced_name(cursor)
+                    if nsName not in self.parseEnums:
+                        print('Enum', nsName)
                         enum = NativeEnum(cursor)
-                        self.parseEnums[cursor.displayname] = enum
+                        self.parseEnums[nsName] = enum
 
         for node in cursor.get_children():
             # print("%s %s - %s" % (">" * depth, node.displayname, node.kind))
