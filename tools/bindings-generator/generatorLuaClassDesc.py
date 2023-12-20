@@ -392,7 +392,6 @@ def get_availability(cursor):
 
     return AvailabilityKind.from_id(cursor._availability)
 
-
 def native_name_from_type(ntype, underlying=False):
     kind = ntype.kind
     if not underlying and kind == cindex.TypeKind.ENUM:
@@ -420,7 +419,6 @@ def native_name_from_type(ntype, underlying=False):
         name = ntype.get_declaration().spelling
         return INVALID_NATIVE_TYPE
 
-
 def build_namespace(cursor, namespaces=[]):
     '''
     build the full namespace for a specific cursor
@@ -433,7 +431,6 @@ def build_namespace(cursor, namespaces=[]):
                 build_namespace(parent, namespaces)
 
     return namespaces
-
 
 def get_namespaced_name(declaration_cursor):
     ns_list = build_namespace(declaration_cursor, [])
@@ -828,6 +825,8 @@ class NativeField(object):
             if namespaced_name in g_generator.parseStructs:
                 g_generator.parseStructs[namespaced_name].testUseTypes(useTypes)
 
+    def writeLuaDesc(self, f):
+        f.write('\n---@field %s %s' %  (self.name, self.ntype.luaType))
 
 # return True if found default argument.
 def iterate_param_node(param_node, depth=1):
@@ -938,6 +937,16 @@ class NativeFunction(object):
             useTypes.add(arg.namespaced_name)
         useTypes.add(self.ret_type.namespaced_name)
 
+    def writeLuaDesc(self, f, cls):
+        f.write('\n---@field %s fun(self: %s' % (self.func_name, transTypeNameToLua(cls.namespaced_class_name)))
+        for i in range(self.min_args):
+            f.write(', %s: %s' % (self.argumtntTips[i], self.arguments[i].luaType))
+
+        for i in range(self.min_args, len(self.arguments)):
+            f.write(', %s?: %s' % (self.argumtntTips[i], self.arguments[i].luaType))
+        f.write('): ')
+        f.write(self.ret_type.luaType)
+
 class NativeOverloadedFunction(object):
     def __init__(self, func_array):
         self.implementations = func_array
@@ -1010,6 +1019,10 @@ class NativeOverloadedFunction(object):
         for fun in self.implementations:
             fun.testUseTypes(useTypes)
 
+    def writeLuaDesc(self, f, cls):
+        for impl in self.implementations:
+            impl.writeLuaDesc(f, cls)
+
 class NativeClass(object):
     def __init__(self, cursor, generator):
         # the cursor to the implementation
@@ -1040,10 +1053,6 @@ class NativeClass(object):
         self.parse()
 
     @property
-    def lua_class_name(self):
-        return transTypeNameToLua(self.namespace_name + self.class_name)
-
-    @property
     def underlined_class_name(self):
         return self.namespaced_class_name.replace("::", "_")
 
@@ -1051,6 +1060,7 @@ class NativeClass(object):
         '''
         parse the current cursor, getting all the necesary information
         '''
+        print('parse class', self.namespaced_class_name)
         self._deep_iterate(self.cursor)
 
     def methods_clean(self):
@@ -1246,7 +1256,20 @@ class NativeClass(object):
             method.testUseTypes(useTypes)
         for (_, method) in self.static_methods.items():
             method.testUseTypes(useTypes)
-            
+
+    def writeLuaDesc(self, f):
+        if self.parents:
+            f.write('\n\n\n---@class %s: %s' % (transTypeNameToLua(self.namespaced_class_name), transTypeNameToLua(self.parents[0].namespaced_class_name)))
+        else:
+            f.write('\n\n\n---@class %s' % (transTypeNameToLua(self.namespaced_class_name)))
+
+        for field in self.public_fields:
+            field.writeLuaDesc(f)
+        for (_, m) in self.methods.items():
+            m.writeLuaDesc(f, self)
+        for (_, m) in self.static_methods.items():
+            m.writeLuaDesc(f, self)
+     
 class NativeEnum(object):
     def __init__(self, cursor):
         # the cursor to the implementation
@@ -1259,6 +1282,7 @@ class NativeEnum(object):
         self.namespaced_class_name = get_namespaced_name(cursor)
         self.namespace_name        = get_namespace_name(cursor)
         
+        print('parse enum', self.namespaced_class_name)
         self._deep_iterate(self.cursor, 0)
 
     def _deep_iterate(self, cursor=None, depth=0):
@@ -1270,8 +1294,17 @@ class NativeEnum(object):
     def _process_node(self, node):
         if node.kind == cindex.CursorKind.ENUM_CONSTANT_DECL:
             field = [node.displayname, node.enum_value]
-            print('fields', field)
+            # print('fields', field)
             self.fields.append(field)
+
+    def writeLuaEnum(self, f):
+        f.write('\n\n%s = {' % transTypeNameToLua(self.namespaced_class_name))
+        for (name, value) in self.fields:
+            f.write('\n    %s = %d,' % (name, value))
+        f.write('\n}')
+
+    def writeLuaDesc(self, f):
+        f.write('\n\n---@alias %s number' % transTypeNameToLua(self.namespaced_class_name))
 
 class NativeStruct(object):
     def __init__(self, cursor):
@@ -1284,7 +1317,8 @@ class NativeStruct(object):
 
         self.namespaced_class_name = get_namespaced_name(cursor)
         self.namespace_name        = get_namespace_name(cursor)
-        
+
+        print('parse struct', self.namespaced_class_name)
         self._deep_iterate(self.cursor, 0)
 
     def _deep_iterate(self, cursor=None, depth=0):
@@ -1300,6 +1334,11 @@ class NativeStruct(object):
     def testUseTypes(self, useTypes):
         for field in self.fields:
             field.testUseTypes(useTypes)
+
+    def writeLuaDesc(self, f):
+        f.write('\n\n\n---@class %s' %  transTypeNameToLua(self.namespaced_class_name))
+        for field in self.fields:
+            field.writeLuaDesc(f)
 
 class Generator(object):
     def __init__(self, opts):
@@ -1401,7 +1440,6 @@ class Generator(object):
             for replace in list_of_replace_headers:
                 header, replaced_header = replace.split("::")
                 self.replace_headers[header] = replaced_header
-
 
     def should_rename_function(self, class_name, method_name):
         if (class_name in self.rename_functions) and (method_name in self.rename_functions[class_name]):
@@ -1539,6 +1577,7 @@ class Generator(object):
         
         self.processUsedEnumsAndStructs()
 
+
     # 遍历注册的类, 搜索用到的 enum 和 struct
     def processUsedEnumsAndStructs(self):
         useTypes = set()
@@ -1560,12 +1599,31 @@ class Generator(object):
         structTypes.sort()
         enumTypes.sort()
 
+
+        f = open(os.path.join(self.outdir, self.out_file + ".lua"), "wt+", encoding='utf8', newline='\n')
         for tp in structTypes:
             print("struct:", tp)
-            
+            struct = self.parseStructs[tp]
+            struct.writeLuaDesc(f)
+
+        fEnum = open(os.path.join(self.outdir, self.out_file + "_enum.lua"), "wt+", encoding='utf8', newline='\n')    
         for tp in enumTypes:
             print("enum:", tp)
+            enum = self.parseEnums[tp]
+            enum.writeLuaDesc(f)
+            enum.writeLuaEnum(fEnum)
 
+        classes = []
+        parsedClass = set()
+        for k in self.sorted_classes():
+            if k in parsedClass:
+                continue
+            parsedClass.add(k)
+            classes.append(k)
+
+        classes.sort()
+        for cls in classes:
+            self.generated_classes[cls].writeLuaDesc(f)
 
     def _pretty_print(self, diagnostics):
         errors=[]
@@ -1638,7 +1696,7 @@ class Generator(object):
                 if self._isTargetedNS(cursor):
                     nsName = get_namespaced_name(cursor)
                     if nsName not in self.parseStructs:
-                        print('Struct', get_namespaced_name(cursor))
+                        print('Struct', nsName)
                         enum = NativeStruct(cursor)
                         self.parseStructs[nsName] = enum
         elif cursor.kind == cindex.CursorKind.ENUM_DECL:
