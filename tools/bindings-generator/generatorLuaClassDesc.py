@@ -412,11 +412,10 @@ def native_name_from_type(ntype, underlying=False):
         elif decl.spelling == "string_view" and parent and parent.spelling == "cxx17":
             return "cxx17::string_view"
         else:
-            print("Unknown type" + str(decl.spelling))
-            # return decl.spelling
+            print("error Unknown type 111" + str(decl.spelling))
             return INVALID_NATIVE_TYPE
     else:
-        name = ntype.get_declaration().spelling
+        print("error Unknown type 222" + str(ntype.get_declaration().spelling))
         return INVALID_NATIVE_TYPE
 
 def build_namespace(cursor, namespaces=[]):
@@ -565,6 +564,8 @@ class NativeType(object):
                         if ret.name != "":
                             if decl.kind == cindex.CursorKind.TYPEDEF_DECL or decl.kind == cindex.CursorKind.TYPE_ALIAS_DECL:
                                 ret.canonical_type = nt
+                                # canonical_type 是 typedef 右侧的类型
+                                # print('@@@@@@@@@@ canonical_type comp', ret.name, nt.name)
                             return ret
 
                 nt.is_enum = ntype.get_canonical().kind == cindex.TypeKind.ENUM
@@ -591,6 +592,19 @@ class NativeType(object):
             nt.is_numeric = True
 
         return nt
+
+    def testUseTypes(self, useTypes):
+        if self.is_function:
+            self.ret_type.testUseTypes(useTypes)
+            for param in self.param_types:
+                param.testUseTypes(useTypes)
+        else:
+            namespaced_name = self.namespaced_name
+            if namespaced_name not in useTypes:
+                # 嵌套扫依赖的 struct
+                useTypes.add(namespaced_name)
+                if namespaced_name in g_generator.parseStructs:
+                    g_generator.parseStructs[namespaced_name].testUseTypes(useTypes)
 
     @staticmethod
     def from_string(displayname):
@@ -792,6 +806,10 @@ class NativeType(object):
 
         return transTypeNameToLua(self.namespaced_name)
 
+    @property
+    def isNotSupported(self):
+        return self.not_supported
+
 class NativeField(object):
     def __init__(self, cursor):
         cursor = cursor.canonical
@@ -818,15 +836,14 @@ class NativeField(object):
         gen.impl_file.write(str(tpl))
 
     def testUseTypes(self, useTypes):
-        namespaced_name = self.ntype.namespaced_name
-        if namespaced_name not in useTypes:
-            # 嵌套扫依赖的 struct
-            useTypes.add(namespaced_name)
-            if namespaced_name in g_generator.parseStructs:
-                g_generator.parseStructs[namespaced_name].testUseTypes(useTypes)
+        self.ntype.testUseTypes(useTypes)
 
     def writeLuaDesc(self, f):
         f.write('\n---@field %s %s' %  (self.name, self.ntype.luaType))
+
+    @property
+    def isNotSupported(self):
+        return self.ntype.isNotSupported
 
 # return True if found default argument.
 def iterate_param_node(param_node, depth=1):
@@ -851,7 +868,6 @@ class NativeFunction(object):
         self.implementations = []
         self.is_overloaded = False
         self.is_constructor = False
-        self.not_supported = False
         self.is_override = False
         self.ret_type = NativeType.from_type(cursor.result_type)
         self.comment = self.get_comment(cursor.raw_comment)
@@ -863,9 +879,6 @@ class NativeFunction(object):
         for arg in cursor.type.argument_types():
             nt = NativeType.from_type(arg)
             self.arguments.append(nt)
-            # mark the function as not supported if at least one argument is not supported
-            if nt.not_supported:
-                self.not_supported = True
 
         found_default_arg = False
         index = -1
@@ -934,8 +947,8 @@ class NativeFunction(object):
 
     def testUseTypes(self, useTypes):
         for arg in self.arguments:
-            useTypes.add(arg.namespaced_name)
-        useTypes.add(self.ret_type.namespaced_name)
+            arg.testUseTypes(useTypes)
+        self.ret_type.testUseTypes(useTypes)
 
     def writeLuaDesc(self, f, cls):
         f.write('\n---@field %s fun(self: %s' % (self.func_name, transTypeNameToLua(cls.namespaced_class_name)))
@@ -947,6 +960,14 @@ class NativeFunction(object):
         f.write('): ')
         f.write(self.ret_type.luaType)
 
+    @property
+    def isNotSupported(self):
+        for arg in self.arguments:
+            if arg.isNotSupported():
+                return True
+            
+        return self.ret_type.isNotSupported()
+    
 class NativeOverloadedFunction(object):
     def __init__(self, func_array):
         self.implementations = func_array
@@ -1191,7 +1212,7 @@ class NativeClass(object):
                 m = NativeFunction(cursor)
                 registration_name = self.generator.should_rename_function(self.class_name, m.func_name) or m.func_name
                 # bail if the function is not supported (at least one arg not supported)
-                if m.not_supported:
+                if m.isNotSupported:
                     return False
                 if m.is_override:
                     if NativeClass._is_method_in_parents(self, registration_name):
@@ -1340,6 +1361,13 @@ class NativeStruct(object):
         for field in self.fields:
             field.writeLuaDesc(f)
 
+    @property
+    def isNotSupported(self):
+        for field in self.fields:
+            if field.isNotSupported:
+                return True
+        return False
+
 class Generator(object):
     def __init__(self, opts):
         global g_generator
@@ -1443,14 +1471,12 @@ class Generator(object):
 
     def should_rename_function(self, class_name, method_name):
         if (class_name in self.rename_functions) and (method_name in self.rename_functions[class_name]):
-            # print >> sys.stderr, "will rename %s to %s" % (method_name, self.rename_functions[class_name][method_name])
             return self.rename_functions[class_name][method_name]
         return None
 
     def get_class_or_rename_class(self, class_name):
 
         if class_name in self.rename_classes:
-            # print >> sys.stderr, "will rename %s to %s" % (method_name, self.rename_functions[class_name][method_name])
             return self.rename_classes[class_name]
         return class_name
 
