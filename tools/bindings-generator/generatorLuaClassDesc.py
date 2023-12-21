@@ -218,6 +218,9 @@ class Generator(object):
 
     def generate_code(self):
         self._parse_headers()
+        
+        assert(False)
+        self.processUsedEnumsAndStructs()
 
         with open(os.path.join(self.target, "conversions.yaml"), 'r') as stream:
             self.config = yaml.safe_load(stream)
@@ -253,7 +256,7 @@ class Generator(object):
         self.head_file.close()
 
         
-        self.processUsedEnumsAndStructs()
+        
 
 
     # 遍历注册的类, 搜索用到的 enum 和 struct

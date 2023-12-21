@@ -1,0 +1,569 @@
+@@@ type  CursorKind.NO_DECL_FOUND TypeKind.VOID
+@@@ type socklen_t CursorKind.TYPEDEF_DECL TypeKind.TYPEDEF | CursorKind.NO_DECL_FOUND TypeKind.INT
+@@@ type socket_native_type CursorKind.TYPEDEF_DECL TypeKind.TYPEDEF | CursorKind.NO_DECL_FOUND TypeKind.INT
+@@@ type intptr_t CursorKind.TYPEDEF_DECL TypeKind.TYPEDEF | CursorKind.NO_DECL_FOUND TypeKind.INT
+@@@ type uint8_t CursorKind.TYPEDEF_DECL TypeKind.TYPEDEF | CursorKind.NO_DECL_FOUND TypeKind.UCHAR
+@@@ type uint32_t CursorKind.TYPEDEF_DECL TypeKind.TYPEDEF | CursorKind.NO_DECL_FOUND TypeKind.UINT
+@@@ type ssize_t CursorKind.TYPEDEF_DECL TypeKind.TYPEDEF | CursorKind.NO_DECL_FOUND TypeKind.INT
+@@@ type uint16_t CursorKind.TYPEDEF_DECL TypeKind.TYPEDEF | CursorKind.NO_DECL_FOUND TypeKind.USHORT
+@@@ type uint64_t CursorKind.TYPEDEF_DECL TypeKind.TYPEDEF | CursorKind.NO_DECL_FOUND TypeKind.ULONGLONG
+@@@ type int16_t CursorKind.TYPEDEF_DECL TypeKind.TYPEDEF | CursorKind.NO_DECL_FOUND TypeKind.SHORT
+@@@ type int64_t CursorKind.TYPEDEF_DECL TypeKind.TYPEDEF | CursorKind.NO_DECL_FOUND TypeKind.LONGLONG
+@@@ type size_t CursorKind.TYPEDEF_DECL TypeKind.TYPEDEF | CursorKind.NO_DECL_FOUND TypeKind.UINT
+@@@ type int8_t CursorKind.TYPEDEF_DECL TypeKind.TYPEDEF | CursorKind.NO_DECL_FOUND TypeKind.SCHAR
+
+@@@ type std::vector<int> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<std::basic_string<char>> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::backend::TextureBackend *> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::Touch *> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::Camera *> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::BaseLight *> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<std::basic_string_view<char>> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<std::function<void ()>> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::Mat4> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::ModelData *> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::NodeData *> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<float> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::IndexArray> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::AABB> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::MeshVertexAttrib> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::MeshData *> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::NTextureData> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::NMaterialData> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::Vec2> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::Properties::Property> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::Properties *> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::Value> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::EventListener *> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::Label::LetterInfo> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::Label::BatchCommand> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<unsigned short> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::V2F_C4B_T2F> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::V3F_C4B_T2F> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::RenderQueue> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::TrianglesCommand *> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::CallbackCommand *> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::GroupCommand *> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::Sprite *> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::TMXTileAnimFrame> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::Vec3> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::MotionStreak3D::VertexData> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::Terrain::TerrainVertexData> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::vector<ax::Terrain::Triangle> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+
+@@@ type std::map<int, std::vector<int>> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::map<std::basic_string<char>, std::vector<ax::Animation3DData::Vec3Key>> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::map<std::basic_string<char>, std::vector<ax::Animation3DData::QuatKey>> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::map<unsigned long long, ax::Node *> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::map<int, std::basic_string<char>> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::map<unsigned int, std::shared_ptr<ax::ISpriteSheetLoader>> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+
+
+@@@ type std::basic_string<char> CursorKind.TYPEDEF_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::basic_string_view<char> CursorKind.TYPEDEF_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+
+@@@ type tsl::robin_map<std::basic_string<char>, ax::Console::Command *, hlookup::string_hash, hlookup::equal_to, std::allocator<std::pair<std::basic_string<char>, ax::Console::Command *>>, false> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type tsl::robin_map<std::basic_string<char>, ax::Value, hlookup::string_hash, hlookup::equal_to, std::allocator<std::pair<std::basic_string<char>, ax::Value>>, false> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type tsl::robin_map<std::basic_string<char>, std::basic_string<char>, hlookup::string_hash, hlookup::equal_to, std::allocator<std::pair<std::basic_string<char>, std::basic_string<char>>>, false> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type tsl::robin_map<std::basic_string<char>, ax::EventDispatcher::EventListenerVector *, hlookup::string_hash, hlookup::equal_to, std::allocator<std::pair<std::basic_string<char>, ax::EventDispatcher::EventListenerVector *>>, false> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type tsl::robin_map<std::basic_string<char>, ax::EventDispatcher::DirtyFlag, hlookup::string_hash, hlookup::equal_to, std::allocator<std::pair<std::basic_string<char>, ax::EventDispatcher::DirtyFlag>>, false> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type tsl::robin_map<std::basic_string<char>, std::shared_ptr<ax::SpriteSheet>, hlookup::string_hash, hlookup::equal_to, std::allocator<std::pair<std::basic_string<char>, std::shared_ptr<ax::SpriteSheet>>>, false> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type tsl::robin_map<std::basic_string<char>, int, hlookup::string_hash, hlookup::equal_to, std::allocator<std::pair<std::basic_string<char>, int>>, false> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type tsl::robin_map<std::basic_string<char>, ax::Texture2D *, hlookup::string_hash, hlookup::equal_to, std::allocator<std::pair<std::basic_string<char>, ax::Texture2D *>>, false> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+
+@@@ type tsl::robin_set<std::basic_string<char>, hlookup::string_hash, hlookup::equal_to, std::allocator<std::basic_string<char>>, false> CursorKind.TYPE_ALIAS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+
+@@@ type std::set<void *> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::set<ax::Node *> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::set<std::basic_string<char>> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+
+@@@ type std::unordered_map<ax::Node *, std::vector<ax::EventListener *> *> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::unordered_map<float, std::vector<ax::Node *>> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::unordered_map<void *, ax::SchedHandle *> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::unordered_map<void *, ax::TimerHandle> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::unordered_map<ax::Node *, int> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::unordered_map<ax::Node *, ax::ActionHandle> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::unordered_map<ax::Node *, ax::backend::ProgramState *> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::unordered_map<int, ax::Sprite *> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::unordered_map<unsigned int, ax::ParticleEmissionMaskDescriptor> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::unordered_map<unsigned short, ax::ParticleFrameDescriptor> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::unordered_map<unsigned short, ax::ParticleAnimationDescriptor> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::unordered_map<unsigned short, ax::EmissionShape> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+
+@@@ type std::stack<ax::Mat4> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::stack<int> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+
+
+@@@ type std::thread CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type yasio::inet::poll_io_watcher CursorKind.TYPE_ALIAS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::mutex CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::array<float, 4> CursorKind.STRUCT_DECL TypeKind.ELABORATED | CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type GLContextAttrs CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ResolutionPolicy CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type std::__thread_id CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::chrono::time_point<std::chrono::steady_clock, std::chrono::duration<long long, std::ratio<1, 1000000000>>> CursorKind.TYPEDEF_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type yasio::pod_vector<ax::SchedHandle *, yasio::buffer_allocator<ax::SchedHandle *, 0>> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type Usage CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type std::__va_list CursorKind.TYPEDEF_DECL TypeKind.TYPEDEF | CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type std::__wrap_iter<ax::Properties::Property *> CursorKind.TYPEDEF_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::__wrap_iter<ax::Properties *const *> CursorKind.TYPEDEF_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::shared_ptr<mio::basic_mmap<mio::access_mode::write, char>> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::unique_ptr<ax::IFileStream> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::recursive_mutex CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type _JNIEnv CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type _jclass CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type _jmethodID CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type std::basic_string<char32_t> CursorKind.TYPEDEF_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::shared_ptr<ax::SpriteSheet> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::shared_ptr<ax::ISpriteSheetLoader> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type FastRNG CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type std::deque<ax::Renderer::StateBlock> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::deque<ax::TextureCache::AsyncStruct *> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::condition_variable CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+
+
+
+@@@ type std::function<void (std::vector<std::basic_string<char>>)> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (const std::vector<ax::Touch *> &, ax::Event *)> CursorKind.TYPEDEF_DECL TypeKind.TYPEDEF | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<float (float)> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (ax::Event *)> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (ax::EventCustom *)> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<bool (ax::Node *)> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (float)> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void ()> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (void *)> CursorKind.TYPEDEF_DECL TypeKind.TYPEDEF | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (std::basic_string<char>)> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (ax::Data)> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (bool)> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (long long)> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (ax::Acceleration *, ax::Event *)> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (ax::ui::Widget *, ax::ui::Widget *)> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (ax::EventKeyboard::KeyCode, ax::Event *)> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (ax::EventMouse *)> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (ax::Controller *, ax::Event *)> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (ax::Controller *, int, ax::Event *)> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<bool (ax::Touch *, ax::Event *)> CursorKind.TYPEDEF_DECL TypeKind.TYPEDEF | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (ax::Touch *, ax::Event *)> CursorKind.TYPEDEF_DECL TypeKind.TYPEDEF | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<ax::Coroutine ()> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (ax::RefPtr<ax::Image>)> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (ax::RenderTexture *, std::basic_string_view<char>)> CursorKind.TYPE_ALIAS_DECL TypeKind.TYPEDEF | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (const ax::backend::PixelBufferDescriptor &)> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (ax::Texture2D *)> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type std::function<void (ax::MeshRenderer *, void *)> CursorKind.CLASS_DECL TypeKind.ELABORATED | CursorKind.CLASS_DECL TypeKind.RECORD
+
+
+@@@ type ax::SEL_SCHEDULE CursorKind.TYPEDEF_DECL TypeKind.TYPEDEF | CursorKind.NO_DECL_FOUND TypeKind.MEMBERPOINTER
+@@@ type ax::Ref CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Console::Command CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Vec2 CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Vec3 CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Vec4 CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Mat4 CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Quaternion CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::backend::SamplerFilter CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::backend::SamplerAddressMode CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::backend::ShaderStage CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::backend::ColorWriteMask CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::backend::BlendOperation CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::backend::BlendFactor CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::Color4B CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::Color4F CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::V2F_C4B_T2F CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::V3F_C4B_T2F CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::V2F_C4F_T2F CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::V3F_T2F CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::T2F_Quad CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::Color3B CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::TextHAlignment CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::TextVAlignment CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::FontShadow CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::FontStroke CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::backend::StencilOperation CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::backend::CompareFunction CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::backend::StencilDescriptor CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::backend::DepthStencilFlags CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::backend::TextureType CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::backend::PixelFormat CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::backend::TextureUsage CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::backend::SamplerDescriptor CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::backend::VertexFormat CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::backend::TargetBufferFlags CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::backend::RenderPassFlags CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::EventListener::Type CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::EventListener CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Node CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EventListenerCustom CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::backend::ShaderCache CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::backend::ShaderModule CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::backend::ProgramState CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::backend::BlendDescriptor CursorKind.STRUCT_DECL TypeKind.ELABORATED | CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::_MipmapInfo CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::Image CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Rect CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::FontDefinition CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::backend::TextureDescriptor CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::backend::TextureBackend CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::backend::Texture2DBackend CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Texture2D::NinePatchInfo CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::backend::UniformLocation CursorKind.STRUCT_DECL TypeKind.ELABORATED | CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::CustomCommand CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Event::Type CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::EventTouch::EventCode CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::EventKeyboard::KeyCode CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::Event CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Touch CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ScriptEventType CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::Component CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Vector<ax::Node *> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Renderer CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Scene CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EventDispatcher CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ActionManager CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Action CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Scheduler CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::AffineTransform CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::Texture2D CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Director CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ComponentContainer CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::PhysicsBody CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Camera CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EventCustom CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::PhysicsWorld CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Physics3DWorld CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::NavMesh CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::AnchorPreset CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::GLView CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TextureCache CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Director::Projection CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::Console CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::MATRIX_STACK_TYPE CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::LabelAtlas CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Vector<ax::Scene *> CursorKind.CLASS_DECL TypeKind.UNEXPOSED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Vector<ax::Timer *> CursorKind.CLASS_DECL TypeKind.UNEXPOSED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Timer CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TimerHandle CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::Vector<ax::SchedulerScriptHandlerEntry *> CursorKind.CLASS_DECL TypeKind.UNEXPOSED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::AsyncTaskPool CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::AsyncTaskPool::TaskType CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::shaderinfos::VertexKey CursorKind.ENUM_DECL TypeKind.ELABORATED | CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::FiniteTimeAction CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Speed CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ActionInterval CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Follow CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Image::Format CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::PolygonInfo CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::V3F_C4B_T2F_Quad CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::TrianglesCommand::Triangles CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::SpriteFrame CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::AnimationFrame CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Animation CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Vector<ax::SpriteFrame *> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Vector<ax::AnimationFrame *> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Sequence CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Vector<ax::FiniteTimeAction *> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Repeat CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::RepeatForever CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Spawn CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::RotateTo CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::RotateBy CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::MoveBy CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::MoveTo CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::SkewTo CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::SkewBy CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::JumpBy CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::JumpTo CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::BezierBy CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::_ccBezierConfig CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::BezierTo CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ScaleTo CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ScaleBy CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Blink CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::FadeTo CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::FadeIn CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::FadeOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TintTo CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TintBy CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::DelayTime CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Animate CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::AnimationFrame::DisplayedEventInfo CursorKind.STRUCT_DECL TypeKind.ELABORATED | CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::TargetedAction CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ActionFloat CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Properties CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Properties::Type CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::Data CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::UserDefault CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::FileStream CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::FileUtils CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::FileUtils::Status CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::ResizableBuffer CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::IFileStream::Mode CursorKind.ENUM_DECL TypeKind.ELABORATED | CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::Acceleration CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ui::Widget CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EventListenerAcceleration CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EventListenerFocus CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EventListenerKeyboard CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EventMouse::MouseEventType CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::EventMouse::MouseButton CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::EventListenerMouse CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EventListenerController CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EventListenerTouchOneByOne CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EventListenerTouchAllAtOnce CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EventController::ControllerEventType CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::Controller CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ActionCamera CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::OrbitCamera CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::CardinalSplineTo CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::PointArray CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::CardinalSplineBy CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::CatmullRomTo CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::CatmullRomBy CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseRateAction CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseExponentialIn CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ActionEase CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseExponentialOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseExponentialInOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseSineIn CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseSineOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseSineInOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseBounceIn CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseBounceOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseBounceInOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseBackIn CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseBackOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseBackInOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseQuadraticActionIn CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseQuadraticActionOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseQuadraticActionInOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseQuarticActionIn CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseQuarticActionOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseQuarticActionInOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseQuinticActionIn CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseQuinticActionOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseQuinticActionInOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseCircleActionIn CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseCircleActionOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseCircleActionInOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseCubicActionIn CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseCubicActionOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseCubicActionInOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseIn CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseInOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseElasticIn CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseElastic CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseElasticOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseElasticInOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EaseBezierAction CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ActionInstant CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Show CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Hide CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ToggleVisibility CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::RemoveSelf CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::FlipX CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::FlipY CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Place CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::CallFunc CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::GridBase CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::GridAction CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::NodeGrid CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Grid3DAction CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TiledGrid3DAction CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Quad3 CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::StopGrid CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ReuseGrid CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Waves3D CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::FlipX3D CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::FlipY3D CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Lens3D CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Ripple3D CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Shaky3D CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Liquid CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Waves CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Twirl CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Vector<ax::Action *> CursorKind.CLASS_DECL TypeKind.UNEXPOSED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ActionHandle CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::PageTurn3D CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ProgressTo CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ProgressFromTo CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ShakyTiles3D CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ShatteredTiles3D CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ShuffleTiles CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Tile CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::FadeOutTRTiles CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::FadeOutBLTiles CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::FadeOutUpTiles CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::FadeOutDownTiles CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TurnOffTiles CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::WavesTiles3D CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::JumpTiles3D CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::SplitRows CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::SplitCols CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ActionTween CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ActionCoroutine CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Coroutine CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::BlendFunc CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::AtlasNode CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TextureAtlas CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::QuadCommand CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ClippingNode CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::StencilStateManager CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ClippingRectangleNode CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::CallbackCommand CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::DrawNode CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::DrawNode::DrawMode CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::any_buffer CursorKind.STRUCT_DECL TypeKind.ELABORATED | CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::GlyphCollection CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::Label CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::_ttfConfig CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::LabelEffect CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::Label::Overflow CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::Sprite CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Label::LabelType CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::FontAtlas CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Vector<ax::SpriteBatchNode *> CursorKind.CLASS_DECL TypeKind.UNEXPOSED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::SpriteBatchNode CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TrianglesCommand CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Sprite::RenderMode CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::Layer CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::LayerColor CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::LayerGradient CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::LayerRadialGradient CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::LayerMultiplex CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::MotionStreak CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ParticleBatchNode CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ParticleSystem CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::SpriteFrameCache CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ISpriteSheetLoader CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Map<std::basic_string<char>, ax::SpriteFrame *, hlookup::string_hash, hlookup::equal_to> CursorKind.CLASS_DECL TypeKind.UNEXPOSED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::EmissionShapeType CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::ParticleData:: CursorKind.STRUCT_DECL TypeKind.ELABORATED | CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::ParticleEmissionMaskCache CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ParticleEmissionMaskDescriptor CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::Vector<ax::ParticleSystem *> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ParticleSystem::Mode CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::HSV CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::ParticleSystem::TexAnimDir CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::EmissionShape CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::ParticleSystem::PositionType CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::ParticleSystem:: CursorKind.STRUCT_DECL TypeKind.ELABORATED | CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::ParticleData CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ParticleSystemQuad CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ParticleFire CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ParticleFireworks CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ParticleSun CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ParticleGalaxy CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ParticleFlower CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ParticleMeteor CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ParticleSpiral CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ParticleExplosion CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ParticleSmoke CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ParticleSnow CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ParticleRain CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ProgressTimer CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::ProgressTimer::Type CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::ProtectedNode CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::RenderTexture CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::backend::RenderTarget CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::RectI CursorKind.TYPE_ALIAS_DECL TypeKind.TYPEDEF | CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::TransitionScene CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionSceneOriented CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionScene::Orientation CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::TransitionRotoZoom CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionJumpZoom CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionMoveInL CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionMoveInR CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionMoveInT CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionMoveInB CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionSlideInL CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionSlideInR CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionSlideInB CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionSlideInT CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionShrinkGrow CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionFlipX CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionFlipY CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionFlipAngular CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionZoomFlipX CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionZoomFlipY CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionZoomFlipAngular CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionFade CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionCrossFade CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionTurnOffTiles CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionSplitCols CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionSplitRows CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionFadeTR CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionFadeBL CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionFadeUp CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionFadeDown CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionPageTurn CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionProgress CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionProgressRadialCCW CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionProgressRadialCW CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionProgressHorizontal CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionProgressVertical CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionProgressInOut CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TransitionProgressOutIn CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::CameraFlag CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::AABB CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::CameraBackgroundBrush CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Frustum CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::CameraBackgroundBrush::BrushType CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::CameraBackgroundDepthBrush CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::CameraBackgroundColorBrush CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::CameraBackgroundSkyBoxBrush CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::CameraBackgroundDepthBrush:: CursorKind.STRUCT_DECL TypeKind.ELABORATED | CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::TextureCube CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::CameraBackgroundSkyBoxBrush:: CursorKind.STRUCT_DECL TypeKind.ELABORATED | CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::Grid3D CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::TiledGrid3D CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::LightType CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::LightFlag CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::DirectionLight CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::PointLight CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::SpotLight CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::AmbientLight CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Pass CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::MeshCommand CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::RenderState::StateBlock CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Technique CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Material CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Vector<ax::Pass *> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::RenderState CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::backend::Buffer CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::backend::PrimitiveType CursorKind.TYPE_ALIAS_DECL TypeKind.ELABORATED | CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::backend::IndexFormat CursorKind.TYPE_ALIAS_DECL TypeKind.ELABORATED | CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::Vector<ax::Technique *> CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::VertexAttribBinding CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::backend::CullMode CursorKind.ENUM_DECL TypeKind.ELABORATED | CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::backend::Winding CursorKind.ENUM_DECL TypeKind.ELABORATED | CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::backend::VertexLayoutType CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::RenderCommand CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::GroupCommand CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::backend::DepthStencilDescriptor CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::backend::CommandBuffer CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::backend::RenderPipeline CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Renderer::TriangleCommandBufferManager CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::backend::RenderPassDescriptor CursorKind.STRUCT_DECL TypeKind.ELABORATED | CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::backend::DepthStencilState CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Renderer::TriBatchToDraw CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::GroupCommandManager CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Renderer::ScissorState CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::PhysicsShape CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Device::ImpactFeedbackStyle CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::Device::NotificationFeedbackType CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::Device::TextAlign CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::Application CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::LanguageType CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::ApplicationProtocol::Platform CursorKind.ENUM_DECL TypeKind.ENUM
+@@@ type ax::GLViewImpl CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::AnimationCache CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Map<std::basic_string<char>, ax::Animation *, hlookup::string_hash, hlookup::equal_to> CursorKind.CLASS_DECL TypeKind.UNEXPOSED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::MotionStreak3D CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::MeshDatas CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::MaterialDatas CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::NodeDatas CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::Vector<ax::MeshVertexData *> CursorKind.CLASS_DECL TypeKind.UNEXPOSED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Vector<ax::backend::ProgramState *> CursorKind.CLASS_DECL TypeKind.UNEXPOSED | CursorKind.CLASS_DECL TypeKind.RECORD
+@@@ type ax::Terrain::ChunkIndices CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::Terrain::Chunk CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::Terrain::QuadTree CursorKind.STRUCT_DECL TypeKind.RECORD
+@@@ type ax::Terrain CursorKind.CLASS_DECL TypeKind.RECORD
