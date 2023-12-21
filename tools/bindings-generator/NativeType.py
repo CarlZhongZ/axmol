@@ -9,56 +9,99 @@ from Cheetah.Template import Template
 
 import ConvertUtils
 
+allTypes = {}
+
+INVALID_NATIVE_TYPE = "??"
+
+voidType = cindex.TypeKind.VOID
+
+booleanType = cindex.TypeKind.BOOL
+
+enumType = cindex.TypeKind.ENUM
+
+numberTypes = {
+    cindex.TypeKind.CHAR_U      : "unsigned char",
+    cindex.TypeKind.UCHAR       : "unsigned char",
+    cindex.TypeKind.CHAR16      : "char",
+    cindex.TypeKind.CHAR32      : "char",
+    cindex.TypeKind.USHORT      : "unsigned short",
+    cindex.TypeKind.UINT        : "unsigned int",
+    cindex.TypeKind.ULONG       : "unsigned long",
+    cindex.TypeKind.ULONGLONG   : "unsigned long long",
+    cindex.TypeKind.CHAR_S      : "char",
+    cindex.TypeKind.SCHAR       : "char",
+    cindex.TypeKind.WCHAR       : "wchar_t",
+    cindex.TypeKind.SHORT       : "short",
+    cindex.TypeKind.INT         : "int",
+    cindex.TypeKind.LONG        : "long",
+    cindex.TypeKind.LONGLONG    : "long long",
+    cindex.TypeKind.FLOAT       : "float",
+    cindex.TypeKind.DOUBLE      : "double",
+    cindex.TypeKind.LONGDOUBLE  : "long double",
+}
+
+
 class NativeType(object):
     def __init__(self):
-        self.is_object = False
-        self.is_function = False
+        self.not_supported = False
+
+        self.is_native_gc_obj = False
+        self.is_auto_gc_obj = False
+
+        self.is_boolean = False
         self.is_enum = False
         self.is_numeric = False
-        self.not_supported = False
+
+        self.is_function = False
         self.param_types = []
         self.ret_type = None
-        self.namespaced_name = "" # with namespace and class name
-        self.namespace_name  = "" # only contains namespace
-        self.name = ""
+
+        self.namespaced_name = None # with namespace and class name
+        self.namespace_name  = None # only contains namespace
+        self.name = None
         self.whole_name = None
+
         self.is_const = False
         self.is_pointer = False
+
         self.canonical_type = None
 
-    @staticmethod
-    def from_type(ntype):
-        if ntype.kind == cindex.TypeKind.POINTER:
-            nt = NativeType.from_type(ntype.get_pointee())
+        self.nsName = None
+        self.lua_type = None
 
-            if None != nt.canonical_type:
-                nt.canonical_type.name += "*"
-                nt.canonical_type.namespaced_name += "*"
-                nt.canonical_type.whole_name += "*"
+    def _initWithType(self, ntype):
+        decl = ntype.get_declaration()
+        cntype = ntype.get_canonical()
+        cdecl = cntype.get_declaration()
 
-            nt.name += "*"
-            nt.namespaced_name += "*"
-            nt.whole_name = nt.namespaced_name
-            nt.is_enum = False
-            nt.is_const = ntype.get_pointee().is_const_qualified()
-            nt.is_pointer = True
-            if nt.is_const:
-                nt.whole_name = "const " + nt.whole_name
-        elif ntype.kind == cindex.TypeKind.LVALUEREFERENCE:
-            nt = NativeType.from_type(ntype.get_pointee())
-            nt.is_const = ntype.get_pointee().is_const_qualified()
-            nt.whole_name = nt.namespaced_name + "&"
+        self.canonical_type = NativeType.from_type(ntype.get_canonical())
+        nsName = ConvertUtils.get_namespaced_name(decl)
+        self.nsName = nsName
+        self.namespaced_name = nsName
 
-            if nt.is_const:
-                nt.whole_name = "const " + nt.whole_name
+        if nsName not in allTypes:
+            assert(decl.spelling == cdecl.spelling, decl.spelling + '|' + cdecl.spelling)
+            assert(decl.displayname == cdecl.displayname, decl.displayname + '|' + cdecl.displayname)
 
-            if None != nt.canonical_type:
-                nt.canonical_type.whole_name += "&"
-        else:
-            nt = NativeType()
-            decl = ntype.get_declaration()
+            # CursorKind.ENUM_DECL ENUM_DECL TYPE_ALIAS_DECL TYPEDEF_DECL NO_DECL_FOUND
+            if decl.kind == cdecl.kind and ntype.kind == cntype.kind:
+                print('@@@ type', nsName, decl.kind, ntype.kind)
+            else:
+                print('@@@ type', nsName, decl.kind, ntype.kind, '|', cdecl.kind, cntype.kind)
+            allTypes[nsName] = self
 
-            nt.namespaced_name = ConvertUtils.get_namespaced_name(decl)
+            if cdecl.kind == cindex.CursorKind.NO_DECL_FOUND:
+                if cntype.kind in numberTypes:
+                    self.name = numberTypes[cntype.kind]
+                elif cntype.kind == booleanType:
+                    self.name = "bool"
+                    self.lua_type = 'boolean'
+                elif cntype.kind == voidType:
+                    self.name = "void"
+                    self.lua_type = 'void'
+                elif cntype.kind == enumType:
+                    self.name = decl.displayname
+
 
             if decl.kind == cindex.CursorKind.CLASS_DECL \
                 and not nt.namespaced_name.startswith('std::function') \
@@ -100,7 +143,7 @@ class NativeType(object):
                 if None != cdecl.spelling and cdecl.spelling == "function":
                     nt.name = "std::function"
 
-                if nt.name != ConvertUtils.INVALID_NATIVE_TYPE and nt.name != "std::string" and nt.name != "std::function" and nt.name != "cxx17::string_view":
+                if nt.name != INVALID_NATIVE_TYPE and nt.name != "std::string" and nt.name != "std::function" and nt.name != "cxx17::string_view":
                     if ntype.kind == cindex.TypeKind.UNEXPOSED or ntype.kind == cindex.TypeKind.TYPEDEF or ntype.kind == cindex.TypeKind.ELABORATED:
                         ret = NativeType.from_type(ntype.get_canonical())
                         if ret.name != "":
@@ -127,12 +170,43 @@ class NativeType(object):
                     nt.param_types = [NativeType.from_string(string) for string in params]
 
         # mark argument as not supported
-        if nt.name == ConvertUtils.INVALID_NATIVE_TYPE:
+        if nt.name == INVALID_NATIVE_TYPE:
             nt.not_supported = True
 
         if re.search("(char|short|int|long|float|double)$", nt.name) is not None:
             nt.is_numeric = True
 
+    @staticmethod
+    def from_type(ntype):
+        if ntype.kind == cindex.TypeKind.POINTER:
+            nt = NativeType.from_type(ntype.get_pointee())
+
+            if None != nt.canonical_type:
+                nt.canonical_type.name += "*"
+                nt.canonical_type.namespaced_name += "*"
+                nt.canonical_type.whole_name += "*"
+
+            nt.name += "*"
+            nt.namespaced_name += "*"
+            nt.whole_name = nt.namespaced_name
+            nt.is_enum = False
+            nt.is_const = ntype.get_pointee().is_const_qualified()
+            nt.is_pointer = True
+            if nt.is_const:
+                nt.whole_name = "const " + nt.whole_name
+        elif ntype.kind == cindex.TypeKind.LVALUEREFERENCE:
+            nt = NativeType.from_type(ntype.get_pointee())
+            nt.is_const = ntype.get_pointee().is_const_qualified()
+            nt.whole_name = nt.namespaced_name + "&"
+
+            if nt.is_const:
+                nt.whole_name = "const " + nt.whole_name
+
+            if None != nt.canonical_type:
+                nt.canonical_type.whole_name += "&"
+        else:
+            nt = NativeType()
+            nt._initWithType(ntype)
         return nt
 
     @staticmethod
