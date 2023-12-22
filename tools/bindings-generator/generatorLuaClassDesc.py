@@ -19,10 +19,7 @@ import ConvertUtils
 from NativeClass import NativeClass
 from NativeEnum import NativeEnum
 from NativeStruct import NativeStruct
-
-
-
-
+from NativeType import NativeType
 
 class Generator(object):
     def __init__(self, opts):
@@ -57,9 +54,6 @@ class Generator(object):
         self.hpp_headers = opts['hpp_headers']
         self.cpp_headers = opts['cpp_headers']
         self.win32_clang_flags = opts['win32_clang_flags']
-
-        self.parseEnums = {}
-        self.parseStructs = {}
 
         extend_clang_args = []
 
@@ -217,9 +211,10 @@ class Generator(object):
 
     def generate_code(self):
         self._parse_headers()
+        self.processUsedEnumsAndStructs()
         
         assert(False)
-        self.processUsedEnumsAndStructs()
+        
 
         with open(os.path.join(self.target, "conversions.yaml"), 'r') as stream:
             self.config = yaml.safe_load(stream)
@@ -254,27 +249,25 @@ class Generator(object):
         self.impl_file.close()
         self.head_file.close()
 
-        
-        
-
-
     # 遍历注册的类, 搜索用到的 enum 和 struct
     def processUsedEnumsAndStructs(self):
         useTypes = set()
+        realUseTypes = set()
         for (_, nativeClass) in self.generated_classes.items():
             nativeClass.testUseTypes(useTypes)
-
-        for tp in useTypes.copy():
-            if tp in self.parseStructs:
-                self.parseStructs[tp].testUseTypes(useTypes)
-
+            realUseTypes.add(nativeClass.namespaced_class_name)
+        
         structTypes = []
         enumTypes = []
         for tp in useTypes:
-            if tp in self.parseEnums:
+            if tp in ConvertUtils.parsedEnums:
                 enumTypes.append(tp)
-            elif tp in self.parseStructs:
+                realUseTypes.add(tp)
+            elif tp in ConvertUtils.parsedStructs:
                 structTypes.append(tp)
+                realUseTypes.add(tp)
+
+        NativeType.onParseCodeEnd(realUseTypes)
 
         structTypes.sort()
         enumTypes.sort()
@@ -282,14 +275,12 @@ class Generator(object):
 
         f = open(os.path.join(self.outdir, self.out_file + ".lua"), "wt+", encoding='utf8', newline='\n')
         for tp in structTypes:
-            print("struct:", tp)
-            struct = self.parseStructs[tp]
+            struct = ConvertUtils.parsedStructs[tp]
             struct.writeLuaDesc(f)
 
         fEnum = open(os.path.join(self.outdir, self.out_file + "_enum.lua"), "wt+", encoding='utf8', newline='\n')    
         for tp in enumTypes:
-            print("enum:", tp)
-            enum = self.parseEnums[tp]
+            enum = ConvertUtils.parsedEnums[tp]
             enum.writeLuaDesc(f)
             enum.writeLuaEnum(fEnum)
 
@@ -334,28 +325,6 @@ class Generator(object):
                     raise Exception("Fatal error in parsing headers")
             self._deep_iterate(tu.cursor)
 
-    def _isTargetedNS(self, cursor):
-        if len(cursor.displayname) == 0:
-            return False
-    
-        assert(self.cpp_ns or self.target_ns)
-        
-        is_targeted_class = False
-        namespaced_name = ConvertUtils.get_namespaced_name(cursor)
-        if self.cpp_ns:
-            for ns in self.cpp_ns:
-                if namespaced_name.startswith(ns):
-                    is_targeted_class = True
-                    break
-
-        if not is_targeted_class:
-            for ns in self.target_ns:
-                if namespaced_name.startswith(ns):
-                    is_targeted_class = True
-                    break
-
-        return is_targeted_class        
-
     def _deep_iterate(self, cursor, depth=0):
         def get_children_array_from_iter(iter):
             children = []
@@ -366,27 +335,27 @@ class Generator(object):
         # get the canonical type
         if cursor.kind == cindex.CursorKind.CLASS_DECL:
             if cursor == cursor.type.get_declaration() and len(get_children_array_from_iter(cursor.get_children())) > 0:
-                if self._isTargetedNS(cursor) and self.in_listed_classes(cursor.displayname):
+                if ConvertUtils.isTargetedNamespace(cursor) and self.in_listed_classes(cursor.displayname):
                     if not (cursor.displayname in self.generated_classes):
-                        print('Class', ConvertUtils.get_namespaced_name(cursor))
+                        print('@@@ Class', ConvertUtils.get_namespaced_name(cursor))
                         nclass = NativeClass(cursor, self)
                         self.generated_classes[cursor.displayname] = nclass
         elif cursor.kind == cindex.CursorKind.STRUCT_DECL:
             if cursor == cursor.type.get_declaration() and len(get_children_array_from_iter(cursor.get_children())) > 0:
-                if self._isTargetedNS(cursor):
+                if ConvertUtils.isTargetedNamespace(cursor):
                     nsName = ConvertUtils.get_namespaced_name(cursor)
-                    if nsName not in self.parseStructs:
-                        print('Struct', nsName)
+                    if nsName not in ConvertUtils.parsedStructs:
+                        print('@@@ Struct', nsName)
                         enum = NativeStruct(cursor)
-                        self.parseStructs[nsName] = enum
+                        ConvertUtils.parsedStructs[nsName] = enum
         elif cursor.kind == cindex.CursorKind.ENUM_DECL:
             if cursor == cursor.type.get_declaration() and len(get_children_array_from_iter(cursor.get_children())) > 0:
-                if self._isTargetedNS(cursor):
+                if ConvertUtils.isTargetedNamespace(cursor):
                     nsName = ConvertUtils.get_namespaced_name(cursor)
-                    if nsName not in self.parseEnums:
-                        print('Enum', nsName)
+                    if nsName not in ConvertUtils.parsedEnums:
+                        print('@@@ Enum', nsName)
                         enum = NativeEnum(cursor)
-                        self.parseEnums[nsName] = enum
+                        ConvertUtils.parsedEnums[nsName] = enum
 
         for node in cursor.get_children():
             # print("%s %s - %s" % (">" * depth, node.displayname, node.kind))

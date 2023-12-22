@@ -41,7 +41,12 @@ class NativeStruct(object):
             field.testUseTypes(useTypes)
 
     def writeLuaDesc(self, f):
-        f.write('\n\n\n---@class %s' %  ConvertUtils.transTypeNameToLua(self.namespaced_class_name))
+        if self.isNotSupported:
+            print('struct not support:%s' % self.namespaced_class_name)
+            return
+
+        f.write('\n\n-- struct:%s' % self.namespaced_class_name)
+        f.write('\n---@class %s' %  ConvertUtils.transTypeNameToLua(self.namespaced_class_name))
         for field in self.fields:
             field.writeLuaDesc(f)
 

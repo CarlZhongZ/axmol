@@ -11,6 +11,10 @@ from configparser import ConfigParser
 
 generator = None
 
+parsedEnums = {}
+
+parsedStructs = {}
+
 ns_map = (
     ("ax::experimental::ui::", "axexp."),
     ("ax::experimental::", "axexp."),
@@ -22,13 +26,23 @@ ns_map = (
     ("spine::", "sp."),
 )
 
+def isTargetedNamespace(cursor):
+    if len(cursor.displayname) == 0:
+        return False
+    
+    namespaced_name = get_namespaced_name(cursor)
+
+    for ns, _ in ns_map:
+        if namespaced_name.startswith(ns):
+            return True
+        
+    return False
+
 def transTypeNameToLua(nameSpaceTypeName):
     for k, v in ns_map:
         if nameSpaceTypeName.startswith(k):
-            return nameSpaceTypeName.replace(k, v)
-    return nameSpaceTypeName
-
-INVALID_NATIVE_TYPE = "??"
+            return nameSpaceTypeName.replace(k, v).replace("::", ".")
+    return nameSpaceTypeName.replace("::", ".")
 
 default_arg_type_arr = [
 
@@ -59,10 +73,6 @@ cindex.CursorKind.GNU_NULL_EXPR,
 # varible, or enumerator.
 cindex.CursorKind.DECL_REF_EXPR
 ]
-
-
-
-
 
 class BaseEnumeration(object):
     """

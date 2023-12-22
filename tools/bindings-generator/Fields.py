@@ -104,17 +104,25 @@ class NativeFunction(object):
         self.ret_type.testUseTypes(useTypes)
 
     def writeLuaDesc(self, f, cls):
+        if self.isNotSupported:
+            return
+
         f.write('\n---@field %s fun(self: %s' % (self.func_name, ConvertUtils.transTypeNameToLua(cls.namespaced_class_name)))
         for i in range(self.min_args):
-            f.write(', %s: %s' % (self.argumtntTips[i], self.arguments[i].luaType))
+            f.write(', %s: %s' % (self.argumtntTips[i] or 'p%d' % i, self.arguments[i].luaType))
 
         for i in range(self.min_args, len(self.arguments)):
-            f.write(', %s?: %s' % (self.argumtntTips[i], self.arguments[i].luaType))
-        f.write('): ')
+            f.write(', %s?: %s' % (self.argumtntTips[i] or 'p%d' % i, self.arguments[i].luaType))
+        f.write(')')
         f.write(self.ret_type.luaType)
+        f.write(' @ function')
 
     @property
     def isNotSupported(self):
+        if re.match(r'^operator[ +\-*/=<>!&~\|\^\.\[\]]+', self.func_name):
+            # 不支持函数重载
+            return True
+
         for arg in self.arguments:
             if arg.isNotSupported:
                 return True
@@ -227,7 +235,11 @@ class NativeField(object):
         self.ntype.testUseTypes(useTypes)
 
     def writeLuaDesc(self, f):
+        if self.isNotSupported:
+            return
+
         f.write('\n---@field %s %s' %  (self.name, self.ntype.luaType))
+        f.write(' @ field')
 
     @property
     def isNotSupported(self):

@@ -41,10 +41,6 @@ class NativeClass(object):
         self.namespace_name        = ConvertUtils.get_namespace_name(cursor)
         self.parse()
 
-    @property
-    def underlined_class_name(self):
-        return self.namespaced_class_name.replace("::", "_")
-
     def parse(self):
         '''
         parse the current cursor, getting all the necesary information
@@ -179,9 +175,6 @@ class NativeClass(object):
             if self._current_visibility == cindex.AccessSpecifier.PUBLIC and not cursor.type.is_function_variadic():
                 m = NativeFunction(cursor)
                 registration_name = self.generator.should_rename_function(self.class_name, m.func_name) or m.func_name
-                # bail if the function is not supported (at least one arg not supported)
-                if m.isNotSupported:
-                    return False
                 if m.is_override:
                     if NativeClass._is_method_in_parents(self, registration_name):
                         if not (registration_name in self.override_methods):
@@ -247,10 +240,11 @@ class NativeClass(object):
             method.testUseTypes(useTypes)
 
     def writeLuaDesc(self, f):
+        f.write('\n\n-- class:%s' % self.namespaced_class_name)
         if self.parents:
-            f.write('\n\n\n---@class %s: %s' % (ConvertUtils.transTypeNameToLua(self.namespaced_class_name), ConvertUtils.transTypeNameToLua(self.parents[0].namespaced_class_name)))
+            f.write('\n---@class %s: %s' % (ConvertUtils.transTypeNameToLua(self.namespaced_class_name), ConvertUtils.transTypeNameToLua(self.parents[0].namespaced_class_name)))
         else:
-            f.write('\n\n\n---@class %s' % (ConvertUtils.transTypeNameToLua(self.namespaced_class_name)))
+            f.write('\n---@class %s' % (ConvertUtils.transTypeNameToLua(self.namespaced_class_name)))
 
         for field in self.public_fields:
             field.writeLuaDesc(f)

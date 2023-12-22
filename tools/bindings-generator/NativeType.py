@@ -10,8 +10,7 @@ from Cheetah.Template import Template
 import ConvertUtils
 
 allTypes = {}
-
-INVALID_NATIVE_TYPE = "??"
+allCreatedTypes = []
 
 numberTypes = {
     cindex.TypeKind.CHAR_U      : "unsigned char",
@@ -114,13 +113,15 @@ def _tryParseFunction(nsName, name):
 
     return (True, ret_type, param_types)
 
+
 class NativeType(object):
     def __init__(self):
+        allCreatedTypes.append(self)
+
         self.not_supported = False
 
         self.is_class = False
-        self.is_native_gc_obj = False
-        self.is_auto_gc_obj = False
+        self.is_native_gc_obj = True
 
         self.is_void = False
         self.is_boolean = False
@@ -146,6 +147,29 @@ class NativeType(object):
         self.is_const = False
         self.is_pointer = False
         self.is_reference = False
+
+    def _onParseCodeEndCheck(self, useTypes):
+        namespaced_name = self.namespaced_name
+        if self.is_enum:
+            assert(namespaced_name in ConvertUtils.parsedEnums, namespaced_name)
+        elif self.is_class:
+            if namespaced_name in ConvertUtils.parsedEnums:
+                # 由字符串创建的 type 不能判定是否为 枚举类型
+                self.is_class = False
+                self.is_enum = True
+
+        if self.is_enum or self.is_class:
+            # print('sssss not_supported', self.namespaced_name)
+            if self.namespaced_name not in useTypes:
+                self.not_supported = True
+            elif self.namespaced_name in ConvertUtils.parsedStructs and ConvertUtils.parsedStructs[self.namespaced_name].isNotSupported:
+                self.not_supported = True
+
+
+    @staticmethod
+    def onParseCodeEnd(useTypes):
+        for tp in allCreatedTypes:
+            tp._onParseCodeEndCheck(useTypes)
 
     def _initWithType(self, ntype):
         decl = ntype.get_declaration()
@@ -192,7 +216,7 @@ class NativeType(object):
             elif cntype.kind == cindex.TypeKind.ENUM:
                 self.is_enum = True
             else:
-                print('invalid type kind', cntype.kind)
+                print('invalid type kind', cntype.kind, declDisplayName, cdeclDisplayName)
                 self.not_supported = True
         elif cdecl.kind == cindex.TypeKind.MEMBERPOINTER:
             # 不支持类成员函数
@@ -298,8 +322,11 @@ class NativeType(object):
                     name.append(', ')
                 name.append('p%d: ' % i)
                 name.append(arg.lua_name)
-                ++i
-            name.append('): %s' % self.ret_type.lua_name)
+                i += 1
+
+            # 不输出返回值，不然生成的 desc 有些不是最后一个参数会不合语法
+            name.append(')')
+
             self.lua_name = ''.join(name)
         else:
             # parse class
@@ -339,10 +366,10 @@ class NativeType(object):
             self.ret_type.testUseTypes(useTypes)
             for param in self.param_types:
                 param.testUseTypes(useTypes)
-        else:
-            namespaced_name = self.namespaced_name
-            if namespaced_name not in useTypes:
-                # 嵌套扫依赖的 struct
-                useTypes.add(namespaced_name)
-                if namespaced_name in ConvertUtils.generator.parseStructs:
-                    ConvertUtils.generator.parseStructs[namespaced_name].testUseTypes(useTypes)
+        elif self.namespaced_name not in useTypes:
+            print('use type', self.namespaced_name)
+            useTypes.add(self.namespaced_name)
+            if self.namespaced_name in ConvertUtils.parsedStructs:
+                # 被类使用到的 struct 里面嵌套的 struct 也会被使用到， 只靠扫表层会查不全
+                print('### parsedStructs', self.namespaced_name)
+                ConvertUtils.parsedStructs[self.namespaced_name].testUseTypes(useTypes)
