@@ -13,12 +13,6 @@ allTypes = {}
 
 INVALID_NATIVE_TYPE = "??"
 
-voidType = cindex.TypeKind.VOID
-
-booleanType = cindex.TypeKind.BOOL
-
-enumType = cindex.TypeKind.ENUM
-
 numberTypes = {
     cindex.TypeKind.CHAR_U      : "unsigned char",
     cindex.TypeKind.UCHAR       : "unsigned char",
@@ -40,15 +34,91 @@ numberTypes = {
     cindex.TypeKind.LONGDOUBLE  : "long double",
 }
 
-stringTypes = set([
+_numberTypeset = set()
+for (_, v) in numberTypes.items():
+    _numberTypeset.add(v)
+
+_stringTypes = set([
     'std::basic_string_view<char>',
     'std::basic_string<char>',
 ])
+
+def regStringType(typeName):
+    _stringTypes.add(typeName)
+
+_arrayParseFun = []
+def regArrayType(parseFun):
+    _arrayParseFun.append(parseFun)
+
+_tableParseFun = []
+def regTableType(parseFun):
+    _tableParseFun.append(parseFun)
+
+def genFunctionParms(parmsStrs, cur=None):
+    ret = []
+    size = len(parmsStrs)
+    if size == 0:
+        return ret
+
+    if cur is None:
+        cur = 0
+
+    c1 = '<'
+    c2 = '>'
+    c1Count = 0
+    parmSep = ', '
+
+    while cur < size:
+        if c1Count == 0:
+            pos = parmsStrs.find(parmSep, cur)
+            if pos == -1:
+                ret.append(parmsStrs[cur:])
+                return ret
+
+            pos1 = parmsStrs.find(c1, cur)
+            if pos1 == -1 or pos < pos1:
+                ret.append(parmsStrs[cur:pos])
+                cur = pos + 2
+            else:
+                cur = pos1 + 1
+                ++c1Count
+        else:
+            pos1 = parmsStrs.find(c1, cur)
+            pos2 = parmsStrs.find(c2, cur)
+            assert(pos2 != -1)
+            if pos1 != -1 and pos1 < pos2:
+                ++c1Count
+                cur = pos1 + 1
+            else:
+                --c1Count
+                cur = pos2 + 1
+
+    print('warning function params not valid:%s' % parmsStrs)
+
+def _tryParseFunction(nsName, name):
+    if not nsName.startswith('std::function<'):
+        return (False, None, None)
+
+    funDef = nsName[14:-1]
+    if funDef.find('function') != -1:
+        # 不支持函数嵌套
+        return (False, None, None)
+
+    i = funDef.find(' (')
+    ret_type = NativeType.from_type_str(funDef[:i])
+
+    param_types = []
+    paramsStrs = genFunctionParms(funDef[i+2:-1])
+    for param in paramsStrs:
+        param_types.append(NativeType.from_type_str(param))
+
+    return (True, ret_type, param_types)
 
 class NativeType(object):
     def __init__(self):
         self.not_supported = False
 
+        self.is_class = False
         self.is_native_gc_obj = False
         self.is_auto_gc_obj = False
 
@@ -59,18 +129,17 @@ class NativeType(object):
         self.is_string = False
 
         self.is_table = False
+        self.table_ele_type = None
 
         self.is_array = False
-        self.array_ele_type = ''
+        self.array_ele_type = None
 
         self.is_function = False
-        self.param_types = []
+        self.param_types = None
         self.ret_type = None
 
         self.namespaced_name = '' # with namespace and class name
-        self.namespace_name  = '' # only contains namespace
         self.name = ''
-        self.decorator = ''
         self.whole_name = ''
         self.lua_name = ''
 
@@ -85,13 +154,17 @@ class NativeType(object):
         cdecl = cntype.get_declaration()
 
         declDisplayName = decl.displayname
-        cdeclDisplayName = cdecl.displayname
+        cdeclDisplayName = cdecl.displayname # 去掉 typedef 的原型
         if len(cdeclDisplayName) > 0 and cdeclDisplayName != declDisplayName:
             displayname = cdeclDisplayName
             self.namespaced_name = ConvertUtils.get_namespaced_name(cdecl)
         else:
             self.namespaced_name = ConvertUtils.get_namespaced_name(decl)
             displayname = declDisplayName
+
+        self.name = displayname
+        self.lua_name = ConvertUtils.transTypeNameToLua(self.namespaced_name)
+
         if self.namespaced_name not in allTypes:
             assert(decl.spelling == cdecl.spelling, decl.spelling + '|' + cdecl.spelling)
             assert(decl.displayname == cdecl.displayname, decl.displayname + '|' + cdecl.displayname)
@@ -108,69 +181,136 @@ class NativeType(object):
                 self.name = numberTypes[cntype.kind]
                 self.is_numeric = True
                 self.lua_name = 'number'
-            elif cntype.kind == booleanType:
+            elif cntype.kind == cindex.TypeKind.BOOL:
                 self.name = "bool"
                 self.is_boolean = True
                 self.lua_name = 'boolean'
-            elif cntype.kind == voidType:
+            elif cntype.kind == cindex.TypeKind.VOID:
                 self.is_void = True
                 self.name = "void"
                 self.lua_name = 'void'
-            elif cntype.kind == enumType:
+            elif cntype.kind == cindex.TypeKind.ENUM:
                 self.is_enum = True
-                self.name = displayname
-                self.lua_name = ConvertUtils.transTypeNameToLua(self.namespaced_name)
+            else:
+                print('invalid type kind', cntype.kind)
+                self.not_supported = True
         elif cdecl.kind == cindex.TypeKind.MEMBERPOINTER:
             # 不支持类成员函数
-            self.name = displayname
+            print('invalid TypeKind.MEMBERPOINTER', self)
             self.not_supported = True
         else:
-            self.name = cdecl.displayname
-            if self.name in stringTypes:
-                self.is_string = True
-                self.lua_name = 'string'
-            elif self.name.startswith('std::vector<'):
-                self.is_array = True
-                self.array_ele_type = NativeType.from_type(self.name[12:-1])
-
-
+            self._tryParseNSName()
 
     @staticmethod
     def from_type(ntype):
         cntype = ntype.get_canonical()
         if cntype.kind == cindex.TypeKind.POINTER:
             nt = NativeType.from_type(cntype.get_pointee())
-
-            nt.decorator += '*'
-            nt.whole_name = nt.namespaced_name + nt.decorator
+            nt.is_pointer = True
+            nt.whole_name = nt.namespaced_name + ' *'
 
             nt.is_const = cntype.get_pointee().is_const_qualified()
-            nt.is_pointer = True
             if nt.is_const:
                 nt.whole_name = "const " + nt.whole_name
 
-            if len(nt.decorator) > 1:
-                nt.not_supported = True
+            if nt.is_numeric:
+                nt.is_numeric = False
+                if nt.name == 'char':
+                    nt.is_string = True
+                    nt.lua_name = 'string'
+                else:
+                    # 数值的指针只支持 char *
+                    nt.not_supported = True
         elif cntype.kind == cindex.TypeKind.LVALUEREFERENCE:
             nt = NativeType.from_type(cntype.get_pointee())
-
-            nt.decorator += '&'
-            nt.whole_name = nt.namespaced_name + nt.decorator
+            nt.is_reference = True
+            nt.whole_name = nt.namespaced_name + ' &'
 
             nt.is_const = cntype.get_pointee().is_const_qualified()
             if nt.is_const:
                 nt.whole_name = "const " + nt.whole_name
-
-            if len(nt.decorator) > 1:
-                nt.not_supported = True
         else:
             nt = NativeType()
             nt._initWithType(ntype)
         return nt
 
+    def _initWithTypeStr(self, typename):
+        self.whole_name = typename
+
+        constIdx = typename.find('const ')
+        if constIdx != -1:
+            self.is_const = True
+            typename = typename[6:]
+
+        if typename[-2:] == ' &':
+            self.is_reference = True
+            typename = typename[:-2]
+        if typename[-2:] == ' *':
+            self.is_pointer = True
+            typename = typename[:-2]
+
+        if typename in _numberTypeset:
+            self.is_numeric = True
+            self.lua_name = 'number'
+        elif typename == 'char' and self.is_pointer:
+            self.is_string = True
+            self.lua_name = 'string'
+        elif typename == 'void':
+            self.is_void = True
+            self.lua_name = 'void'
+        elif typename == 'bool':
+            self.is_boolean = True
+            self.lua_name = 'boolean'
+        else:
+            self.namespaced_name = typename
+            self.lua_name = ConvertUtils.transTypeNameToLua(typename)
+            self._tryParseNSName()
+
+    def _tryParseNSName(self):
+        if self.namespaced_name in _stringTypes:
+            self.is_string = True
+            self.lua_name = 'string'
+            return
+
+        for parseFun in _arrayParseFun:
+            isArray, arrayType = parseFun(self.namespaced_name, self.name)
+            if isArray:
+                self.is_array = True
+                self.array_ele_type = arrayType
+                self.lua_name = arrayType.lua_name + '[]'
+                return
+
+        for parseFun in _tableParseFun:
+            isTable, tableType = parseFun(self.namespaced_name, self.name)
+            if isTable:
+                self.is_table = True
+                self.table_ele_type = tableType
+                self.lua_name = 'table<string, %s>' % tableType.lua_name
+                return
+
+        # parse function
+        self.is_function, self.ret_type, self.param_types = _tryParseFunction(self.namespaced_name, self.name)
+        if self.is_function:
+            name = ['fun(']
+            i = 1
+            for arg in self.param_types:
+                if i > 1:
+                    name.append(', ')
+                name.append('p%d: ' % i)
+                name.append(arg.lua_name)
+                ++i
+            name.append('): %s' % self.ret_type.lua_name)
+            self.lua_name = ''.join(name)
+        else:
+            # parse class
+            self.is_class = True
+
+
     @staticmethod
     def from_type_str(typename):
-        pass
+        ret = NativeType()
+        ret._initWithTypeStr(typename)
+        return ret
 
     def __str__(self):
         return self.whole_name
@@ -181,7 +321,18 @@ class NativeType(object):
 
     @property
     def isNotSupported(self):
-        return self.not_supported
+        if self.not_supported:
+            return True
+        
+        if self.is_function:
+            for p in self.param_types:
+                if p.isNotSupported:
+                    return True
+            
+            if self.ret_type.isNotSupported:
+                return True
+
+        return False
 
     def testUseTypes(self, useTypes):
         if self.is_function:
