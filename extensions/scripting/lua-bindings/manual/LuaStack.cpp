@@ -45,13 +45,7 @@ extern "C" {
 #    include "scripting/lua-bindings/manual/platform/android/LuaJavaBridge.h"
 #endif
 
-#include "scripting/lua-bindings/manual/base/LuaScriptHandlerMgr.h"
-#include "scripting/lua-bindings/auto/axlua_base_auto.hpp"
-#include "scripting/lua-bindings/manual/base/axlua_base_manual.hpp"
 #include "scripting/lua-bindings/manual/LuaBasicConversions.h"
-#include "scripting/lua-bindings/auto/axlua_physics_auto.hpp"
-#include "scripting/lua-bindings/manual/physics/axlua_physics_manual.hpp"
-#include "scripting/lua-bindings/auto/axlua_backend_auto.hpp"
 #include "base/ZipUtils.h"
 #include "platform/FileUtils.h"
 
@@ -144,19 +138,8 @@ bool LuaStack::init()
     luaL_register(_state, "_G", global_functions);
 
     g_luaType.clear();
-    register_all_ax_base(_state);
-    register_all_ax_backend(_state);
-    register_all_ax_manual(_state);
-    register_all_ax_module_manual(_state);
-    register_all_ax_math_manual(_state);
-    register_all_ax_shaders_manual(_state);
-    register_all_ax_bytearray_manual(_state);
 
-    tolua_luanode_open(_state);
-    register_luanode_manual(_state);
 #if AX_USE_PHYSICS
-    register_all_ax_physics(_state);
-    register_all_ax_physics_manual(_state);
 #endif
 
 #if (AX_TARGET_PLATFORM == AX_PLATFORM_IOS || AX_TARGET_PLATFORM == AX_PLATFORM_MAC)
@@ -166,8 +149,6 @@ bool LuaStack::init()
 #if (AX_TARGET_PLATFORM == AX_PLATFORM_ANDROID)
     LuaJavaBridge::luaopen_luaj(_state);
 #endif
-
-    tolua_script_handler_mgr_open(_state);
 
     // add cocos2dx loader
     addLuaLoader(axlua_loader);

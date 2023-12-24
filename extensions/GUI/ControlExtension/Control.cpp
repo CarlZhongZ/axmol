@@ -31,7 +31,6 @@
 
 #include "Control.h"
 #include "base/Director.h"
-#include "2d/Menu.h"
 #include "base/Touch.h"
 #include "Invocation.h"
 #include "base/EventDispatcher.h"
@@ -117,13 +116,6 @@ void Control::sendActionsForControlEvents(EventType controlEvents)
             {
                 invocation->invoke(this);
             }
-#if AX_ENABLE_SCRIPT_BINDING
-            ax::BasicScriptData data(this, (void*)&controlEvents);
-            ax::ScriptEvent event(ax::kControlEvent, (void*)&data);
-            auto scriptEngine = ax::ScriptEngineManager::getInstance()->getScriptEngine();
-            if (scriptEngine)
-                scriptEngine->sendEvent(event);
-#endif
         }
     }
     release();

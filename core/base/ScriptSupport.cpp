@@ -44,77 +44,6 @@ bool AX_DLL cc_assert_script_compatible(const char* msg)
 NS_AX_BEGIN
 
 //
-// // ScriptHandlerEntry
-
-ScriptHandlerEntry* ScriptHandlerEntry::create(int handler)
-{
-    ScriptHandlerEntry* entry = new ScriptHandlerEntry(handler);
-    entry->autorelease();
-    return entry;
-}
-
-ScriptHandlerEntry::~ScriptHandlerEntry()
-{
-    if (_handler != 0)
-    {
-        ScriptEngineManager::getInstance()->getScriptEngine()->removeScriptHandler(_handler);
-        LUALOG("[LUA] Remove event handler: %d", _handler);
-        _handler = 0;
-    }
-}
-
-//
-// // SchedulerScriptHandlerEntry
-
-SchedulerScriptHandlerEntry* SchedulerScriptHandlerEntry::create(int handler, float interval, bool paused)
-{
-    SchedulerScriptHandlerEntry* entry = new SchedulerScriptHandlerEntry(handler);
-    entry->init(interval, paused);
-    entry->autorelease();
-    return entry;
-}
-
-bool SchedulerScriptHandlerEntry::init(float interval, bool paused)
-{
-    _timer = new TimerScriptHandler();
-    _timer->initWithScriptHandler(_handler, interval);
-    _paused = paused;
-    LUALOG("[LUA] ADD script schedule: %d, entryID: %d", _handler, _entryId);
-    return true;
-}
-
-SchedulerScriptHandlerEntry::~SchedulerScriptHandlerEntry()
-{
-    _timer->release();
-    LUALOG("[LUA] DEL script schedule %d, entryID: %d", _handler, _entryId);
-}
-
-//
-// // TouchScriptHandlerEntry
-
-TouchScriptHandlerEntry* TouchScriptHandlerEntry::create(int handler,
-                                                         bool isMultiTouches,
-                                                         int priority,
-                                                         bool swallowsTouches)
-{
-    TouchScriptHandlerEntry* entry = new TouchScriptHandlerEntry(handler);
-    entry->init(isMultiTouches, priority, swallowsTouches);
-    entry->autorelease();
-    return entry;
-}
-
-TouchScriptHandlerEntry::~TouchScriptHandlerEntry() {}
-
-bool TouchScriptHandlerEntry::init(bool isMultiTouches, int priority, bool swallowsTouches)
-{
-    _isMultiTouches  = isMultiTouches;
-    _priority        = priority;
-    _swallowsTouches = swallowsTouches;
-
-    return true;
-}
-
-//
 // // ScriptEngineManager
 
 static ScriptEngineManager* s_pSharedScriptEngineManager = nullptr;
@@ -158,27 +87,6 @@ void ScriptEngineManager::destroyInstance()
         delete s_pSharedScriptEngineManager;
         s_pSharedScriptEngineManager = nullptr;
     }
-}
-
-void ScriptEngineManager::sendNodeEventToLua(Node* node, int action)
-{
-    auto scriptEngine = getInstance()->getScriptEngine();
-    if (scriptEngine)
-    {
-
-        BasicScriptData data(node, (void*)&action);
-        ScriptEvent scriptEvent(kNodeEvent, (void*)&data);
-
-        scriptEngine->sendEvent(scriptEvent);
-    }
-}
-
-int ScriptEngineManager::sendEventToLua(const ScriptEvent& event)
-{
-    auto scriptEngine = getInstance()->getScriptEngine();
-    if (scriptEngine)
-        return scriptEngine->sendEvent(event);
-    return 0;
 }
 
 NS_AX_END

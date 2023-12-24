@@ -1996,12 +1996,6 @@ protected:
     // camera mask, it is visible only when _cameraMask & current camera' camera flag is true
     unsigned short _cameraMask;
 
-#if AX_ENABLE_SCRIPT_BINDING
-    int _scriptHandler;        ///< script handler for onEnter() & onExit(), used in Javascript binding and Lua binding.
-    int _updateScriptHandler;  ///< script handler for update() callback per frame, which is invoked from lua &
-                               ///< javascript.
-#endif
-
     ComponentContainer* _componentContainer;  ///< Dictionary of components
 
     // opacity controls

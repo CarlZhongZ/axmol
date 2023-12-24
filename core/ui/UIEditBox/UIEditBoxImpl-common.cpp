@@ -363,15 +363,6 @@ void EditBoxImplCommon::editBoxEditingDidBegin()
     {
         pDelegate->editBoxEditingDidBegin(_editBox);
     }
-
-#if AX_ENABLE_SCRIPT_BINDING
-    if (NULL != _editBox && 0 != _editBox->getScriptEditBoxHandler())
-    {
-        ax::CommonScriptData data(_editBox->getScriptEditBoxHandler(), "began", _editBox);
-        ax::ScriptEvent event(ax::kCommonEvent, (void*)&data);
-        ax::ScriptEngineManager::sendEventToLua(event);
-    }
-#endif
 }
 
 void EditBoxImplCommon::editBoxEditingDidEnd(std::string_view text, EditBoxDelegate::EditBoxEndAction action)
@@ -385,19 +376,6 @@ void EditBoxImplCommon::editBoxEditingDidEnd(std::string_view text, EditBoxDeleg
         pDelegate->editBoxEditingDidEndWithAction(_editBox, action);
         pDelegate->editBoxReturn(_editBox);
     }
-
-#if AX_ENABLE_SCRIPT_BINDING
-    if (_editBox != nullptr && 0 != _editBox->getScriptEditBoxHandler())
-    {
-        ax::CommonScriptData data(_editBox->getScriptEditBoxHandler(), "ended", _editBox);
-        ax::ScriptEvent event(ax::kCommonEvent, (void*)&data);
-        ax::ScriptEngineManager::sendEventToLua(event);
-        memset(data.eventName, 0, sizeof(data.eventName));
-        strncpy(data.eventName, "return", sizeof(data.eventName));
-        event.data = (void*)&data;
-        ax::ScriptEngineManager::sendEventToLua(event);
-    }
-#endif
 
     if (_editBox != nullptr)
     {
@@ -414,15 +392,6 @@ void EditBoxImplCommon::editBoxEditingChanged(std::string_view text)
     {
         pDelegate->editBoxTextChanged(_editBox, text);
     }
-
-#if AX_ENABLE_SCRIPT_BINDING
-    if (NULL != _editBox && 0 != _editBox->getScriptEditBoxHandler())
-    {
-        ax::CommonScriptData data(_editBox->getScriptEditBoxHandler(), "changed", _editBox);
-        ax::ScriptEvent event(ax::kCommonEvent, (void*)&data);
-        ax::ScriptEngineManager::sendEventToLua(event);
-    }
-#endif
 }
 
 }  // namespace ui

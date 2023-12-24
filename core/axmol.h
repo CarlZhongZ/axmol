@@ -121,8 +121,6 @@ THE SOFTWARE.
 #include "2d/Label.h"
 #include "2d/LabelAtlas.h"
 #include "2d/Layer.h"
-#include "2d/Menu.h"
-#include "2d/MenuItem.h"
 #include "2d/MotionStreak.h"
 #include "2d/Node.h"
 #include "2d/NodeGrid.h"

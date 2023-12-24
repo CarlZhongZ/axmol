@@ -125,23 +125,6 @@ protected:
     std::string _key;
 };
 
-#if AX_ENABLE_SCRIPT_BINDING
-
-class AX_DLL TimerScriptHandler : public Timer
-{
-public:
-    bool initWithScriptHandler(int handler, float seconds);
-    int getScriptHandler() const { return _scriptHandler; }
-
-    virtual void trigger(float dt) override;
-    virtual void cancel() override;
-
-private:
-    int _scriptHandler;
-};
-
-#endif
-
 /**
  * @endcond
  */
@@ -175,10 +158,6 @@ struct TimerHandle
     Timer* currentTimer;
     bool paused;
 };
-
-#if AX_ENABLE_SCRIPT_BINDING
-class SchedulerScriptHandlerEntry;
-#endif
 
 /** @brief Scheduler is responsible for triggering the scheduled callbacks.
 You should not use system timer for your game logic. Instead, use this class.
@@ -325,20 +304,6 @@ public:
     {
         this->schedulePerFrame([target](float dt) { target->update(dt); }, target, priority, paused);
     }
-
-#if AX_ENABLE_SCRIPT_BINDING
-    // Schedule for script bindings.
-    /** The scheduled script callback will be called every 'interval' seconds.
-     If paused is true, then it won't be called until it is resumed.
-     If 'interval' is 0, it will be called every frame.
-     return schedule script entry ID, used for unscheduleScriptFunc().
-
-     @warn Don't invoke this function unless you know what you are doing.
-     @js NA
-     @lua NA
-     */
-    unsigned int scheduleScriptFunc(unsigned int handler, float interval, bool paused);
-#endif
     /////////////////////////////////////
 
     // unschedule
@@ -386,15 +351,6 @@ public:
      @since v2.0.0
      */
     void unscheduleAllWithMinPriority(int minPriority);
-
-#if AX_ENABLE_SCRIPT_BINDING
-    /** Unschedule a script entry.
-     * @warning Don't invoke this function unless you know what you are doing.
-     * @js NA
-     * @lua NA
-     */
-    void unscheduleScriptEntry(unsigned int scheduleScriptEntryID);
-#endif
 
     /////////////////////////////////////
 
@@ -533,10 +489,6 @@ protected:
     bool _currentTargetSalvaged;
     // If true unschedule will not remove anything from a hash. Elements will only be marked for deletion.
     bool _indexMapLocked;
-
-#if AX_ENABLE_SCRIPT_BINDING
-    Vector<SchedulerScriptHandlerEntry*> _scriptHandlerEntries;
-#endif
 
     // Used for "perform action"
     std::vector<std::function<void()>> _actionsToPerform;

@@ -107,10 +107,6 @@ Node::Node()
     , _ignoreAnchorPointForPosition(false)
     , _reorderChildDirty(false)
     , _isTransitionFinished(false)
-#if AX_ENABLE_SCRIPT_BINDING
-    , _scriptHandler(0)
-    , _updateScriptHandler(0)
-#endif
     , _componentContainer(nullptr)
     , _displayedOpacity(255)
     , _realOpacity(255)
@@ -160,13 +156,6 @@ Node::~Node()
 
     AX_SAFE_DELETE(_childrenIndexer);
 
-#if AX_ENABLE_SCRIPT_BINDING
-    if (_updateScriptHandler)
-    {
-        ScriptEngineManager::getInstance()->getScriptEngine()->removeScriptHandler(_updateScriptHandler);
-    }
-#endif
-
     // User object has to be released before others, since userObject may have a weak reference of this node
     // It may invoke `node->stopAllActions();` while `_actionManager` is null if the next line is after
     // `AX_SAFE_RELEASE_NULL(_actionManager)`.
@@ -215,10 +204,6 @@ bool Node::initLayer() {
 
 void Node::cleanup()
 {
-#if AX_ENABLE_SCRIPT_BINDING
-    ScriptEngineManager::sendNodeEventToLua(this, kNodeOnCleanup);
-#endif  // #if AX_ENABLE_SCRIPT_BINDING
-
     // actions
     this->stopAllActions();
     // timers
@@ -1351,10 +1336,6 @@ void Node::onEnter()
     this->resume();
 
     _running = true;
-
-#if AX_ENABLE_SCRIPT_BINDING
-    ScriptEngineManager::sendNodeEventToLua(this, kNodeOnEnter);
-#endif
 }
 
 void Node::onEnterTransitionDidFinish()
@@ -1365,10 +1346,6 @@ void Node::onEnterTransitionDidFinish()
     _isTransitionFinished = true;
     for (const auto& child : _children)
         child->onEnterTransitionDidFinish();
-
-#if AX_ENABLE_SCRIPT_BINDING
-    ScriptEngineManager::sendNodeEventToLua(this, kNodeOnEnterTransitionDidFinish);
-#endif
 }
 
 void Node::onExitTransitionDidStart()
@@ -1378,10 +1355,6 @@ void Node::onExitTransitionDidStart()
 
     for (const auto& child : _children)
         child->onExitTransitionDidStart();
-
-#if AX_ENABLE_SCRIPT_BINDING
-    ScriptEngineManager::sendNodeEventToLua(this, kNodeOnExitTransitionDidStart);
-#endif
 }
 
 void Node::onExit()
@@ -1405,10 +1378,6 @@ void Node::onExit()
 
     for (const auto& child : _children)
         child->onExit();
-
-#if AX_ENABLE_SCRIPT_BINDING
-    ScriptEngineManager::sendNodeEventToLua(this, kNodeOnExit);
-#endif
 }
 
 void Node::setEventDispatcher(EventDispatcher* dispatcher)
@@ -1525,24 +1494,12 @@ void Node::scheduleUpdateWithPriorityLua(int nHandler, int priority)
 {
     unscheduleUpdate();
 
-#if AX_ENABLE_SCRIPT_BINDING
-    _updateScriptHandler = nHandler;
-#endif
-
     _scheduler->scheduleUpdate(this, priority, !_running);
 }
 
 void Node::unscheduleUpdate()
 {
     _scheduler->unscheduleUpdate(this);
-
-#if AX_ENABLE_SCRIPT_BINDING
-    if (_updateScriptHandler)
-    {
-        ScriptEngineManager::getInstance()->getScriptEngine()->removeScriptHandler(_updateScriptHandler);
-        _updateScriptHandler = 0;
-    }
-#endif
 }
 
 void Node::schedule(SEL_SCHEDULE selector)
@@ -1628,16 +1585,6 @@ void Node::pause()
 // override me
 void Node::update(float fDelta)
 {
-#if AX_ENABLE_SCRIPT_BINDING
-    if (0 != _updateScriptHandler)
-    {
-        // only lua use
-        SchedulerScriptData data(_updateScriptHandler, fDelta);
-        ScriptEvent event(kScheduleEvent, &data);
-        ScriptEngineManager::sendEventToLua(event);
-    }
-#endif
-
     if (_componentContainer && !_componentContainer->isEmpty())
     {
         _componentContainer->visit(fDelta);
