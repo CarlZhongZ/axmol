@@ -42,7 +42,6 @@ set(_AX_2D_HEADER
     2d/ActionGrid3D.h
     2d/CameraBackgroundBrush.h
     2d/FastTMXTiledMap.h
-    2d/MenuItem.h
     2d/FontFNT.h
     2d/SpriteBatchNode.h
     2d/TransitionProgress.h
@@ -61,7 +60,6 @@ set(_AX_2D_HEADER
     2d/ActionTiledGrid.h
     2d/ActionManager.h
     2d/MotionStreak.h
-    2d/Menu.h
     2d/DrawNode.h
     #2d/TMXLayer.h
     2d/Camera.h
@@ -109,8 +107,6 @@ set(_AX_2D_SRC
     2d/Label.cpp
     2d/Layer.cpp
     2d/Light.cpp
-    2d/Menu.cpp
-    2d/MenuItem.cpp
     2d/MotionStreak.cpp
     2d/Node.cpp
     2d/NodeGrid.cpp
