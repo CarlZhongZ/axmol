@@ -1375,6 +1375,22 @@ AX_LUA_DLL void program_activeattrs_to_luaval(lua_State* L,
  */
 AX_LUA_DLL void resourceData_to_luaval(lua_State* L, const ax::ResourceData& data);
 
+template<class T>
+void tolua_push_value(lua_State* L, const T& value) {
+    lua_pushnil(L);
+}
+
+template <class T>
+void tolua_get_value(lua_State* L, int loc, T& value) {
+    lua_pushboolean(L, );
+    lua_newtable(L);
+}
+
+template <class T>
+void tolua_push_function(L, T fun) {
+
+}
+
 // end group
 /// @}
 #endif  //__COCOS2DX_SCRIPTING_LUA_COCOS2DXSUPPORT_LUABAISCCONVERSIONS_H__

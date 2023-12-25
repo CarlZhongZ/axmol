@@ -213,16 +213,8 @@ class Generator(object):
         self._parse_headers()
         self.processUsedEnumsAndStructs()
         
-        assert(False)
-        
-
-        with open(os.path.join(self.target, "conversions.yaml"), 'r') as stream:
-            self.config = yaml.safe_load(stream)
-
-        implfilepath = os.path.join(self.outdir, self.out_file + ".cpp")
-        headfilepath = os.path.join(self.outdir, self.out_file + ".hpp")
-        self.impl_file = open(implfilepath, "wt+", encoding='utf8', newline='\n')
-        self.head_file = open(headfilepath, "wt+", encoding='utf8', newline='\n')
+        self.impl_file = open(os.path.join(self.outdir, self.out_file + ".cpp"), "wt+", encoding='utf8', newline='\n')
+        self.head_file = open(os.path.join(self.outdir, self.out_file + ".hpp"), "wt+", encoding='utf8', newline='\n')
 
         layout_h = Template(file=os.path.join(self.target, "templates", "layout_head.h.tmpl"),
                             searchList=[self])
@@ -272,11 +264,19 @@ class Generator(object):
         structTypes.sort()
         enumTypes.sort()
 
+        fStructConvert = open(os.path.join(self.outdir, self.out_file + "_struct_convert.h"), "wt+",
+                              encoding='utf8', newline='\n')
+        self.usedStructypes = structTypes
+        self.parsedStructs = ConvertUtils.parsedStructs
+        fStructConvert.write(str(Template(file=os.path.join(self.target, "templates", "struct_convert.h.tmpl"),
+                                    searchList=[self])))
 
         f = open(os.path.join(self.outdir, self.out_file + ".lua"), "wt+", encoding='utf8', newline='\n')
         for tp in structTypes:
             struct = ConvertUtils.parsedStructs[tp]
             struct.writeLuaDesc(f)
+
+
 
         fEnum = open(os.path.join(self.outdir, self.out_file + "_enum.lua"), "wt+", encoding='utf8', newline='\n')    
         for tp in enumTypes:

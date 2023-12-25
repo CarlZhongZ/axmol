@@ -1,0 +1,15 @@
+\#include "scripting/lua-bindings/manual/tolua_fix.h"
+\#include "scripting/lua-bindings/manual/LuaBasicConversions.h"
+
+
+#for structType in $usedStructypes
+    #set structInfo = $usedStructypes[structType]
+
+template<${structInfo.namespaced_class_name}>
+void tolua_push_value(lua_State* L, const ${structInfo.namespaced_class_name} &value) {
+    #for field in structInfo.fields
+    
+    #end for
+}
+
+#end for
