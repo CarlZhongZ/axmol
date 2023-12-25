@@ -583,8 +583,8 @@ int LuaStack::luaLoadChunksFromZIP(lua_State* L)
     }
 
     using namespace cxx17;
-    const auto BYTECODE_FILE_EXT     = ".luac"_sv;
-    const auto NOT_BYTECODE_FILE_EXT = ".lua"_sv;
+    const auto BYTECODE_FILE_EXT     = ".luac";
+    const auto NOT_BYTECODE_FILE_EXT = ".lua";
 
     const char* zipFilename = lua_tostring(L, -1);
     lua_settop(L, 0);
