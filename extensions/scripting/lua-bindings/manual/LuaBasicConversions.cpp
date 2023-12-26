@@ -29,8 +29,8 @@
 #include "base/Utils.h"
 #include <sstream>
 
-std::unordered_map<uintptr_t, const char*> g_luaType;
-std::unordered_map<cxx17::string_view, const char*> g_typeCast;
+std::unordered_map<uintptr_t, const char*> ToluaConvert::g_luaType;
+std::unordered_map<cxx17::string_view, const char*> ToluaConvert::g_typeCast;
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,7 +40,8 @@ extern int lua_isusertype(lua_State* L, int lo, const char* type);
 }
 #endif
 
-bool luaval_is_usertype(lua_State* L, int lo, const char* type, int def)
+
+bool ToluaConvert::luaval_is_usertype(lua_State* L, int lo, const char* type, int def)
 {
     if (def && lua_gettop(L) < std::abs(lo))
         return true;

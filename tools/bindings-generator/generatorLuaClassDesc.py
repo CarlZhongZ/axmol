@@ -270,7 +270,6 @@ class Generator(object):
         # 根据依赖性排序
         dependantSortedStructTypes = []
         i = 0
-        # for tp in structTypes:
         for i in range(len(structTypes)):
             tp = structTypes[i]
             for j in range(i):

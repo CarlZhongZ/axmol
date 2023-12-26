@@ -137,7 +137,7 @@ bool LuaStack::init()
         {"print", lua_print}, {"release_print", lua_release_print}, {"version", lua_version}, {nullptr, nullptr}};
     luaL_register(_state, "_G", global_functions);
 
-    g_luaType.clear();
+    ToluaConvert::g_luaType.clear();
 
 #if AX_USE_PHYSICS
 #endif

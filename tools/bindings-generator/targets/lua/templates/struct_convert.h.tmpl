@@ -2,7 +2,7 @@
 #for structType in $structTypes
     #set structInfo = $parsedStructs[structType]
 template<>
-void tolua_push_value(lua_State* L, const ${structInfo.namespaced_class_name} &value) {
+void ToluaConvert::tolua_push_value(lua_State* L, const ${structInfo.namespaced_class_name} &value) {
     lua_newtable(L);
     #for field in structInfo.fields
     tolua_push_value(L, value.${field.name});
@@ -11,7 +11,7 @@ void tolua_push_value(lua_State* L, const ${structInfo.namespaced_class_name} &v
 }
 
 template<>
-void tolua_get_value(lua_State* L, int loc, ${structInfo.namespaced_class_name} &value) {
+void ToluaConvert::tolua_get_value(lua_State* L, int loc, ${structInfo.namespaced_class_name} &value) {
     if (!lua_istable(L, loc)) {
         return;
     }

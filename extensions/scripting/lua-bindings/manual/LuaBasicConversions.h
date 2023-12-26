@@ -22,8 +22,7 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
  ****************************************************************************/
-#ifndef __COCOS2DX_SCRIPTING_LUA_COCOS2DXSUPPORT_LUABAISCCONVERSIONS_H__
-#define __COCOS2DX_SCRIPTING_LUA_COCOS2DXSUPPORT_LUABAISCCONVERSIONS_H__
+#pragma once
 
 #include <unordered_map>
 #include <string>
@@ -35,80 +34,62 @@
 
 USING_NS_AX;
 
-extern std::unordered_map<uintptr_t, const char*> g_luaType;
-extern std::unordered_map<cxx17::string_view, const char*> g_typeCast;
-
-/**
- * @addtogroup lua
- * @{
- */
-
-/**
- * If the typename of userdata at the given acceptable index of stack is equal to type it return true, otherwise return
- * false. If def != 0, lo could greater than the top index of stack, return value is true. If the value of the given
- * index is nil, return value also is true.
- *
- * @param L the current lua_State.
- * @param lo the given acceptable index of stack.
- * @param type the typename used to judge.
- * @param def whether has default value.
- * @return Return true if the typename of userdata at the given acceptable index of stack is equal to type, otherwise
- * return false.
- */
-extern bool luaval_is_usertype(lua_State* L, int lo, const char* type, int def);
-// to native
-
-/**
- * Get the real typename for the specified typename.
- * Because all override functions wouldn't be bound,so we must use `typeid` to get the real class name.
- *
- * @param ret the pointer points to a type T object.
- * @param type the string pointer points to specified typename.
- * @return return the pointer points to the real typename, or nullptr.
- */
-template <class T>
-const char* getLuaTypeName(T* ret, const char* defaultTypeName)
+class ToluaConvert
 {
-    if (nullptr != ret)
+public:
+    static std::unordered_map<uintptr_t, const char*> g_luaType;
+    static std::unordered_map<cxx17::string_view, const char*> g_typeCast;
+
+    static bool luaval_is_usertype(lua_State* L, int lo, const char* type, int def);
+
+    template <class T>
+    static const char* getLuaTypeName(T* ret, const char* defaultTypeName)
     {
-        auto typeName = typeid(*ret).name();
-        auto iter     = g_luaType.find(reinterpret_cast<uintptr_t>(typeName));
-        if (g_luaType.end() != iter)
+        if (nullptr != ret)
         {
-            return iter->second;
-        }
-        else
-        {  // unlike logic, for windows dll only
-            cxx17::string_view strkey(typeName);
-            auto iter2 = g_typeCast.find(strkey);
-            if (iter2 != g_typeCast.end())
+            auto typeName = typeid(*ret).name();
+            auto iter     = g_luaType.find(reinterpret_cast<uintptr_t>(typeName));
+            if (g_luaType.end() != iter)
             {
-                g_luaType.emplace(reinterpret_cast<uintptr_t>(typeName), iter2->second);
-                return iter2->second;
+                return iter->second;
             }
-            return defaultTypeName;
+            else
+            {  // unlike logic, for windows dll only
+                cxx17::string_view strkey(typeName);
+                auto iter2 = g_typeCast.find(strkey);
+                if (iter2 != g_typeCast.end())
+                {
+                    g_luaType.emplace(reinterpret_cast<uintptr_t>(typeName), iter2->second);
+                    return iter2->second;
+                }
+                return defaultTypeName;
+            }
         }
+
+        return nullptr;
     }
 
-    return nullptr;
-}
+    template <class T>
+    static void tolua_push_value(lua_State* L, const T& value)
+    {
+        // lua_pushnumber(L, value);
+    }
 
+    template <>
+    static void tolua_push_value(lua_State* L, const bool& value)
+    {
+        lua_pushboolean(L, value);
+    }
 
-template<class T>
-void tolua_push_value(lua_State* L, const T &value) {
-    //lua_pushnumber(L, value);
-}
+    template <class T>
+    static void tolua_get_value(lua_State* L, int loc, T& value)
+    {
+        // value = luaL_checknumber(L, loc);
+    }
 
-template <>
-void tolua_push_value(lua_State* L, const bool &value) {
-    lua_pushboolean(L, value);
-}
-
-template <class T>
-void tolua_get_value(lua_State* L, int loc, T &value) {
-    //value = luaL_checknumber(L, loc);
-}
-
-// end group
-/// @}
-#endif  //__COCOS2DX_SCRIPTING_LUA_COCOS2DXSUPPORT_LUABAISCCONVERSIONS_H__
+    template <>
+    static void tolua_get_value(lua_State* L, int loc, bool& value)
+    {
+        value = lua_toboolean(L, loc);
+    }
+};
