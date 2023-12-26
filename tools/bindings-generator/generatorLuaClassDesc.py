@@ -212,6 +212,9 @@ class Generator(object):
     def generate_code(self):
         self._parse_headers()
         self.processUsedEnumsAndStructs()
+
+        # 
+        assert False
         
         self.impl_file = open(os.path.join(self.outdir, self.out_file + ".cpp"), "wt+", encoding='utf8', newline='\n')
         self.head_file = open(os.path.join(self.outdir, self.out_file + ".hpp"), "wt+", encoding='utf8', newline='\n')
@@ -264,21 +267,43 @@ class Generator(object):
         structTypes.sort()
         enumTypes.sort()
 
-        fStructConvert = open(os.path.join(self.outdir, self.out_file + "_struct_convert.h"), "wt+",
-                              encoding='utf8', newline='\n')
-        self.usedStructypes = structTypes
-        self.parsedStructs = ConvertUtils.parsedStructs
-        fStructConvert.write(str(Template(file=os.path.join(self.target, "templates", "struct_convert.h.tmpl"),
-                                    searchList=[self])))
+        # 根据依赖性排序
+        dependantSortedStructTypes = []
+        i = 0
+        # for tp in structTypes:
+        for i in range(len(structTypes)):
+            tp = structTypes[i]
+            for j in range(i):
+                if ConvertUtils.parsedStructs[structTypes[j]].containsType(tp):
+                    dependantSortedStructTypes.insert(j, tp)
+                    break
+            else:
+                dependantSortedStructTypes.append(tp)
+        structTypes = dependantSortedStructTypes
 
-        f = open(os.path.join(self.outdir, self.out_file + ".lua"), "wt+", encoding='utf8', newline='\n')
+
+        fAutoGenCodes = open(os.path.join(self.outdir, "lua_auto_gen_codes.h"), "wt+",
+                              encoding='utf8', newline='\n')
+        fAutoGenCodesCpp = open(os.path.join(self.outdir, "lua_auto_gen_codes.cpp"), "wt+",
+                              encoding='utf8', newline='\n')
+        
+        fAutoGenCodesCpp.write('#include "lua_auto_gen_codes.h"')
+
+        fAutoGenCodes.write(str(Template(file=os.path.join(self.target, "templates", "layout_head.c.tmpl"),
+                            searchList=[self])))
+
+        fAutoGenCodes.write(str(Template(file=os.path.join(self.target, "templates", "struct_convert.h.tmpl"),
+                                    searchList=[self, {
+                                        'structTypes': structTypes,
+                                        'parsedStructs': ConvertUtils.parsedStructs,
+                                    }])))
+
+        f = open(os.path.join(self.outdir, "engine_types.lua"), "wt+", encoding='utf8', newline='\n')
         for tp in structTypes:
             struct = ConvertUtils.parsedStructs[tp]
             struct.writeLuaDesc(f)
 
-
-
-        fEnum = open(os.path.join(self.outdir, self.out_file + "_enum.lua"), "wt+", encoding='utf8', newline='\n')    
+        fEnum = open(os.path.join(self.outdir, "engine_enums.lua"), "wt+", encoding='utf8', newline='\n')
         for tp in enumTypes:
             enum = ConvertUtils.parsedEnums[tp]
             enum.writeLuaDesc(f)

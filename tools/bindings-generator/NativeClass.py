@@ -17,7 +17,6 @@ class NativeClass(object):
         # the cursor to the implementation
         self.cursor = cursor
         self.class_name = cursor.displayname
-        self.is_ref_class = self.class_name == "Ref"
         self.namespaced_class_name = self.class_name
         self.parents = []
         self.fields = []
@@ -92,9 +91,6 @@ class NativeClass(object):
         generate the right code
         '''
 
-        if not self.is_ref_class:
-            self.is_ref_class = self._is_ref_class()
-
         for m in self.methods_clean():
             m['impl'].generate_code(self)
         for m in self.static_methods_clean():
@@ -124,21 +120,6 @@ class NativeClass(object):
             return NativeClass._is_method_in_parents(current_class.parents[0], method_name)
         return False
 
-    def _is_ref_class(self, depth = 0):
-        """
-        Mark the class as 'ax::Ref' or its subclass.
-        """
-        # print ">" * (depth + 1) + " " + self.class_name
-
-        for parent in self.parents:
-            if parent._is_ref_class(depth + 1):
-                return True
-
-        if self.is_ref_class:
-            return True
-
-        return False
-
     def _process_node(self, cursor):
         '''
         process the node, depending on the type. If returns true, then it will perform a deep
@@ -160,9 +141,6 @@ class NativeClass(object):
                         parent = self.generator.generated_classes[parent.displayname]
 
                     self.parents.append(parent)
-
-            if parent_name == "Ref":
-                self.is_ref_class = True
 
         elif cursor.kind == cindex.CursorKind.FIELD_DECL:
             self.fields.append(NativeField(cursor))
@@ -252,3 +230,21 @@ class NativeClass(object):
             m.writeLuaDesc(f, self)
         for (_, m) in self.static_methods.items():
             m.writeLuaDesc(f, self)
+
+    def containsType(self, typeName):
+        for field in self.public_fields:
+            if field.containsType(typeName):
+                return True
+            
+        for method in self.methods:
+            if method.containsType(typeName):
+                return True
+            
+        for method in self.static_methods:
+            if method.containsType(typeName):
+                return True
+            
+        if self.parents:
+            return self.parents[0].containsType(typeName)
+
+        return False

@@ -56,3 +56,9 @@ class NativeStruct(object):
             if field.isNotSupported:
                 return True
         return False
+
+    def containsType(self, typeName):
+        for field in self.fields:
+            if field.containsType(typeName):
+                return True
+        return False

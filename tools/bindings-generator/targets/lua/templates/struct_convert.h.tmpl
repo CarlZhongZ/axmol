@@ -1,14 +1,25 @@
-\#include "scripting/lua-bindings/manual/tolua_fix.h"
-\#include "scripting/lua-bindings/manual/LuaBasicConversions.h"
 
-
-#for structType in $usedStructypes
-    #set structInfo = $usedStructypes[structType]
-
-template<${structInfo.namespaced_class_name}>
+#for structType in $structTypes
+    #set structInfo = $parsedStructs[structType]
+template<>
 void tolua_push_value(lua_State* L, const ${structInfo.namespaced_class_name} &value) {
+    lua_newtable(L);
     #for field in structInfo.fields
-    
+    tolua_push_value(L, value.${field.name});
+    lua_setfield(L, -2, "${field.name}");
+    #end for
+}
+
+template<>
+void tolua_get_value(lua_State* L, int loc, ${structInfo.namespaced_class_name} &value) {
+    if (!lua_istable(L, loc)) {
+        return;
+    }
+
+    #for field in structInfo.fields
+    lua_getfield(L, loc, "${field.name}");
+    tolua_get_value(L, -1, value.${field.name});
+    lua_pop(L, 1);
     #end for
 }
 

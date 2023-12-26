@@ -38,13 +38,13 @@ for (_, v) in numberTypes.items():
     _numberTypeset.add(v)
 
 # value 转换成 char * 的转换方式： v % varName
-_stringTypes = {
-    'std::basic_string_view<char>': ('%s.c_str()', '%s.size()'),
-    'std::basic_string<char>': ('%s.c_str(), %s.size()'),
-}
+_stringTypes = set([
+    'std::basic_string_view<char>',
+    'std::basic_string<char>',
+])
 
-def regStringType(typeName, convertCode):
-    _stringTypes[typeName] = convertCode
+def regStringType(typeName):
+    _stringTypes.add(typeName)
 
 _arrayParseFun = []
 def regArrayType(parseFun):
@@ -124,12 +124,12 @@ class NativeType(object):
         self.is_class = False
         self.is_native_gc_obj = True
 
-        self.is_basic_types = False
         self.is_void = False
         self.is_boolean = False
-        self.is_enum = False
         self.is_numeric = False
         self.is_string = False
+
+        self.is_enum = False
 
         self.is_table = False
         self.table_ele_type = None
@@ -281,7 +281,6 @@ class NativeType(object):
         elif typename == 'char' and self.is_pointer:
             self.is_string = True
             self.lua_name = 'string'
-            self.convert_str_code = ('%s', 'strlen(%s)')
         elif typename == 'void':
             self.is_void = True
             self.lua_name = 'void'
@@ -296,7 +295,6 @@ class NativeType(object):
     def _tryParseNSName(self):
         if self.namespaced_name in _stringTypes:
             self.is_string = True
-            self.convert_str_code = _stringTypes[self.namespaced_name]
             self.lua_name = 'string'
             return
 
@@ -378,30 +376,22 @@ class NativeType(object):
                 print('### parsedStructs', self.namespaced_name)
                 ConvertUtils.parsedStructs[self.namespaced_name].testUseTypes(useTypes)
 
-    def genPushCode(self, varName):
-        ret =  []
-        if self.is_numeric:
-            ret.append('lua_pushnumber(L, %s);' % (varName, ))
-        elif self.is_enum:
-            ret.append('lua_pushnumber(L, (int)%s);' % (varName, ))
-        elif self.is_boolean:
-            ret.append('lua_pushboolean(L, %s);' % (varName, ))
-        elif self.is_string:
-            ret.append('lua_pushlstring(L, %s, %s);' % \
-                    (self.convert_str_code[0] % varName, self.convert_str_code[1] % varName))
-        elif self.is_table or self.is_array:
-            ret.append('tolua_push_value(L, %s);' % (varName, ))
-        elif self.is_function:
-            pass
-        elif self.is_class:
-            pass
+    # @property
+    # def isBasicType(self):
+    #     return self.is_numeric or self.is_string or self.is_boolean or self.is_void
 
-
-        return ''.join(ret)
-    
-    def genGetCode(self, varName, loc):
-        ret =  [
-            '%s %s;' % (self.namespaced_name, varName),
-            ]
-        return ''.join(ret)
+    def containsType(self, typeName):
+        if typeName == self.namespaced_name:
+            return True
+            
+        if self.is_function:
+            for arg in self.param_types:
+                if arg.containsType(typeName):
+                    return True
+            return self.ret_type.containsType(typeName)
+        elif self.is_array:
+            return self.array_ele_type.containsType(typeName)
+        elif self.is_table:
+            return self.table_ele_type.containsType(typeName)
         
+        return False

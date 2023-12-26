@@ -129,6 +129,12 @@ class NativeFunction(object):
         
         return self.ret_type.isNotSupported
 
+    def containsType(self, typeName):
+        for arg in self.arguments:
+            if arg.containsType(typeName):
+                return True
+
+        return self.ret_type.containsType(typeName)
     
 class NativeOverloadedFunction(object):
     def __init__(self, func_array):
@@ -205,6 +211,12 @@ class NativeOverloadedFunction(object):
     def writeLuaDesc(self, f, cls):
         for impl in self.implementations:
             impl.writeLuaDesc(f, cls)
+    
+    def containsType(self, typeName):
+        for impl in self.implementations:
+            if impl.containsType(typeName):
+                return True
+        return False
 
 class NativeField(object):
     def __init__(self, cursor):
@@ -244,3 +256,6 @@ class NativeField(object):
     @property
     def isNotSupported(self):
         return self.ntype.isNotSupported
+
+    def containsType(self, typeName):
+        return self.ntype.containsType(typeName)

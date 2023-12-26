@@ -95,18 +95,18 @@ const char* getLuaTypeName(T* ret, const char* defaultTypeName)
 
 
 template<class T>
-void tolua_push_value(lua_State* L, const T& value) {
-    lua_pushnumber(L, value);
+void tolua_push_value(lua_State* L, const T &value) {
+    //lua_pushnumber(L, value);
 }
 
 template <>
-void tolua_push_value(lua_State* L, const bool& value) {
+void tolua_push_value(lua_State* L, const bool &value) {
     lua_pushboolean(L, value);
 }
 
 template <class T>
-void tolua_get_value(lua_State* L, int loc, T& value) {
-    value = luaL_checknumber(L, loc);
+void tolua_get_value(lua_State* L, int loc, T &value) {
+    //value = luaL_checknumber(L, loc);
 }
 
 // end group
