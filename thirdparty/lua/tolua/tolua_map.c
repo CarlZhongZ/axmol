@@ -507,12 +507,7 @@ TOLUA_API int tolua_register_gc (lua_State* L, int lo)
 */
 TOLUA_API void tolua_usertype (lua_State* L, const char* type)
 {
-    char ctype[128] = "const ";
-    strncat(ctype,type,120);
-
-    /* create both metatables */
-    if (tolua_newmetatable(L,ctype) && tolua_newmetatable(L,type))
-        mapsuper(L,type,ctype);             /* 'type' is also a 'const type' */
+    tolua_newmetatable(L, type);
 }
 
 
@@ -650,29 +645,14 @@ static void push_collector(lua_State* L, const char* type, lua_CFunction col) {
 */
 TOLUA_API void tolua_cclass (lua_State* L, const char* lname, const char* name, const char* base, lua_CFunction col)
 {
-    char cname[128] = "const ";
-    char cbase[128] = "const ";
-    strncat(cname,name,120);
-    strncat(cbase,base,120);
-
     mapinheritance(L,name,base);
-    mapinheritance(L,cname,name);
-
-    mapsuper(L,cname,cbase);
     mapsuper(L,name,base);
 
     lua_pushstring(L,lname);
 
     push_collector(L, name, col);
-    /*
-    luaL_getmetatable(L,name);
-    lua_pushstring(L,".collector");
-    lua_pushcfunction(L,col);
 
-    lua_rawset(L,-3);
-    */
-
-//---- create a new class table, set it's metatable, and assign it to module
+    //---- create a new class table, set it's metatable, and assign it to module
     lua_newtable(L);                    // stack: module lname table
     luaL_getmetatable(L,name);          // stack: module lname table mt
     lua_setmetatable(L, -2);            // stack: module lname table
@@ -681,20 +661,6 @@ TOLUA_API void tolua_cclass (lua_State* L, const char* lname, const char* name, 
     lua_pushboolean(L, 1);
     lua_rawset(L, -3);                  // stack: module lname table
     lua_rawset(L, -3);                  // stack: module
-//---- by SunLightJuly, 2014.6.5
-
-    /* now we also need to store the collector table for the const
-       instances of the class */
-    push_collector(L, cname, col);
-    /*
-    luaL_getmetatable(L,cname);
-    lua_pushstring(L,".collector");
-    lua_pushcfunction(L,col);
-    lua_rawset(L,-3);
-    lua_pop(L,1);
-    */
-
-
 }
 
 /* Add base

@@ -44,25 +44,67 @@ void ToluaConvert::tolua_get_value(lua_State* L, int loc, ${structInfo.ns_full_n
 #end for
 
 
+#for clsType in $classTypes
+    #set cls = $generated_classes[clsType]
+void register_${cls.ns_full_name.replace('::', '_')}(lua_State* L) {
+    tolua_usertype(L,"${cls.luaClassName}");
+    #if len($cls.parents) > 0
+        #if $cls.has_constructor
+    tolua_cclass(L,"${cls.class_name}","${cls.luaClassName}","${generator.scriptname_from_native($cls.parents[0].namespaced_class_name,$cls.parents[0].namespace_name)}",lua_${generator.prefix}_${cls.class_name}_finalize);
+        #else
+    tolua_cclass(L,"${cls.class_name}","${cls.luaClassName}","${generator.scriptname_from_native($cls.parents[0].namespaced_class_name,$cls.parents[0].namespace_name)}",nullptr);
+        #end if
+    #else
+        #if $cls.has_constructor
+    tolua_cclass(L,"${cls.class_name}","${cls.luaClassName}","",lua_${generator.prefix}_${cls.class_name}_finalize);
+        #else
+    tolua_cclass(L,"${cls.class_name}","${cls.luaClassName}","",nullptr);
+        #end if
+    #end if
+
+    tolua_beginmodule(L,"${cls.class_name}");
+    #if $cls.has_constructor
+        tolua_function(L,"new",lua_${generator.prefix}_${cls.class_name}_constructor);
+    #end if
+    #for m in methods
+        #set fn = m['impl']
+        tolua_function(L,"${m['name']}",${fn.signature_name});
+    #end for
+    #for m in st_methods
+        #set fn = m['impl']
+        tolua_function(L,"${m['name']}", ${fn.signature_name});
+    #end for
+    tolua_endmodule(L);
+    auto typeName = typeid(${cls.namespaced_class_name}).name(); // rtti is literal storage
+    g_luaType[reinterpret_cast<uintptr_t>(typeName)] = "${cls.luaClassName}";
+    g_typeCast[typeName] = "${cls.luaClassName}";
+    return 1;
+}
+#end for
+
 ## registerAutoCode
-## void ToluaConvert::registerAutoCode(lua_State* L)
-## {
-## 	tolua_open(tolua_S);
+void ToluaConvert::registerAutoCode(lua_State* L)
+{
+	tolua_open(L);
+    tolua_beginmodule(L,NULL);
 	
-## 	#if $target_ns
-## 	tolua_module(tolua_S,"${target_ns}",0);
-## 	tolua_beginmodule(tolua_S,"${target_ns}");
-## 	#else
-## 	tolua_module(tolua_S,nullptr,0);
-## 	tolua_beginmodule(tolua_S,nullptr);
-## 	#end if
+#set target_ns = None
+#for clsType in $classTypes
+    #set cls = $generated_classes[clsType]
+    #if target_ns != cls.luaNSName
+        #if not target_ns is None
+    tolua_endmodule(L);
+        #end if
+        #set target_ns = cls.luaNSName
 
-## 	#for jsclass in $sorted_classes
-## 	#if $in_listed_classes(jsclass)
-## 	lua_register_${prefix}_${jsclass}(tolua_S);
-## 	#end if
-## 	#end for
+    tolua_module(L,"${target_ns}",0);
+    tolua_beginmodule(L,"${target_ns}");
+    #end if
+    register_${cls.ns_full_name.replace('::', '_')}(L);
+#end for
+#if not target_ns is None
+    tolua_endmodule(L);
+#end if
 
-## 	tolua_endmodule(tolua_S);
-## 	return 1;
-## }
+    tolua_endmodule(L);
+}
