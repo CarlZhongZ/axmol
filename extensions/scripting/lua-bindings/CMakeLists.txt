@@ -19,7 +19,6 @@ set(lua_bindings_files
     manual/lua_module_register.cpp
     manual/tolua_fix.h
     manual/tolua_fix.cpp
-    auto/lua_auto_gen_codes.h
     auto/lua_auto_gen_codes.cpp
     )
 

@@ -1,0 +1,68 @@
+\#pragma once
+
+\#include "scripting/lua-bindings/manual/LuaBasicConversions.h"
+#for header in $headers
+    #set relative = '..'
+    #for search_path in $search_paths
+        #set relative = os.path.relpath(header, $search_path)
+        #if not '..' in relative
+            #break
+        #end if
+    #end for
+    #if not '..' in relative
+\#include "${relative.replace(os.path.sep, '/')}"
+    #else
+\#include "${os.path.basename(header)}"
+    #end if
+#end for
+
+## struct convert logic implementation
+#for structType in $structTypes
+    #set structInfo = $parsedStructs[structType]
+template<>
+void ToluaConvert::tolua_push_value(lua_State* L, const ${structInfo.ns_full_name} &value) {
+    lua_newtable(L);
+    #for field in structInfo.fields
+    tolua_push_value(L, value.${field.name});
+    lua_setfield(L, -2, "${field.name}");
+    #end for
+}
+
+template<>
+void ToluaConvert::tolua_get_value(lua_State* L, int loc, ${structInfo.ns_full_name} &value) {
+    if (!lua_istable(L, loc)) {
+        return;
+    }
+
+    #for field in structInfo.fields
+    lua_getfield(L, loc, "${field.name}");
+    tolua_get_value(L, -1, value.${field.name});
+    lua_pop(L, 1);
+    #end for
+}
+
+#end for
+
+
+## registerAutoCode
+## void ToluaConvert::registerAutoCode(lua_State* L)
+## {
+## 	tolua_open(tolua_S);
+	
+## 	#if $target_ns
+## 	tolua_module(tolua_S,"${target_ns}",0);
+## 	tolua_beginmodule(tolua_S,"${target_ns}");
+## 	#else
+## 	tolua_module(tolua_S,nullptr,0);
+## 	tolua_beginmodule(tolua_S,nullptr);
+## 	#end if
+
+## 	#for jsclass in $sorted_classes
+## 	#if $in_listed_classes(jsclass)
+## 	lua_register_${prefix}_${jsclass}(tolua_S);
+## 	#end if
+## 	#end for
+
+## 	tolua_endmodule(tolua_S);
+## 	return 1;
+## }

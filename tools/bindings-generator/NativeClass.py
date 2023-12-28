@@ -17,7 +17,6 @@ class NativeClass(object):
         # the cursor to the implementation
         self.cursor = cursor
         self.class_name = cursor.displayname
-        self.namespaced_class_name = self.class_name
         self.parents = []
         self.fields = []
         self.public_fields = []
@@ -29,22 +28,18 @@ class NativeClass(object):
         #for generate lua api doc
         self.override_methods = {}
         self.has_constructor  = False
-        self.namespace_name   = ""
 
-        registration_name = generator.get_class_or_rename_class(self.class_name)
-        if generator.remove_prefix:
-            self.target_class_name = re.sub('^' + generator.remove_prefix, '', registration_name)
-        else:
-            self.target_class_name = registration_name
-        self.namespaced_class_name = ConvertUtils.get_namespaced_name(cursor)
+        self.target_class_name = generator.get_class_or_rename_class(self.class_name)
         self.namespace_name        = ConvertUtils.get_namespace_name(cursor)
+        self.ns_full_name = ConvertUtils.get_namespaced_name(cursor)
+        
         self.parse()
 
     def parse(self):
         '''
         parse the current cursor, getting all the necesary information
         '''
-        print('parse class', self.namespaced_class_name)
+        print('parse class', self.ns_full_name)
         self._deep_iterate(self.cursor)
 
     def methods_clean(self):
@@ -98,8 +93,7 @@ class NativeClass(object):
         for m in self.override_methods_clean():
             m['impl'].generate_code(self, is_override = True)
         for m in self.public_fields:
-            if self.generator.should_bind_field(self.class_name, m.name):
-                m.generate_code(self)
+            m.generate_code(self)
 
         # generate register section
         register = Template(file=os.path.join(self.generator.target, "templates", "register.c.tmpl"),
@@ -151,7 +145,7 @@ class NativeClass(object):
         elif cursor.kind == cindex.CursorKind.CXX_METHOD and ConvertUtils.get_availability(cursor) != ConvertUtils.AvailabilityKind.DEPRECATED:
             # skip if variadic
             if self._current_visibility == cindex.AccessSpecifier.PUBLIC and not cursor.type.is_function_variadic():
-                m = NativeFunction(cursor)
+                m = NativeFunction(cursor, self)
                 registration_name = self.generator.should_rename_function(self.class_name, m.func_name) or m.func_name
                 if m.is_override:
                     if NativeClass._is_method_in_parents(self, registration_name):
@@ -187,11 +181,11 @@ class NativeClass(object):
 
         elif self._current_visibility == cindex.AccessSpecifier.PUBLIC and cursor.kind == cindex.CursorKind.CONSTRUCTOR and not self.is_abstract:
             # Skip copy constructor
-            if cursor.displayname == self.class_name + "(const " + self.namespaced_class_name + " &)":
+            if cursor.displayname == self.class_name + "(const " + self.ns_full_name + " &)":
                 # print("Skip copy constructor: " + cursor.displayname)
                 return True
 
-            m = NativeFunction(cursor)
+            m = NativeFunction(cursor, self)
             m.is_constructor = True
             self.has_constructor = True
             if not ('constructor' in self.methods):
@@ -217,20 +211,6 @@ class NativeClass(object):
         for (_, method) in self.static_methods.items():
             method.testUseTypes(useTypes)
 
-    def writeLuaDesc(self, f):
-        f.write('\n\n-- class:%s' % self.namespaced_class_name)
-        if self.parents:
-            f.write('\n---@class %s: %s' % (ConvertUtils.transTypeNameToLua(self.namespaced_class_name), ConvertUtils.transTypeNameToLua(self.parents[0].namespaced_class_name)))
-        else:
-            f.write('\n---@class %s' % (ConvertUtils.transTypeNameToLua(self.namespaced_class_name)))
-
-        for field in self.public_fields:
-            field.writeLuaDesc(f)
-        for (_, m) in self.methods.items():
-            m.writeLuaDesc(f, self)
-        for (_, m) in self.static_methods.items():
-            m.writeLuaDesc(f, self)
-
     def containsType(self, typeName):
         for field in self.public_fields:
             if field.containsType(typeName):
@@ -248,3 +228,11 @@ class NativeClass(object):
             return self.parents[0].containsType(typeName)
 
         return False
+
+    @property
+    def luaNSName(self):
+        return ConvertUtils.nsNameToLuaName(self.ns_full_name)
+
+    @property
+    def luaClassName(self):
+        return ConvertUtils.transTypeNameToLua(self.ns_full_name)

@@ -15,14 +15,13 @@ class NativeEnum(object):
         # the cursor to the implementation
         self.cursor = cursor
         self.class_name = cursor.displayname
-        self.namespaced_class_name = None
         self.fields = []
         self._current_visibility = cindex.AccessSpecifier.PRIVATE
 
-        self.namespaced_class_name = ConvertUtils.get_namespaced_name(cursor)
+        self.ns_full_name = ConvertUtils.get_namespaced_name(cursor)
         self.namespace_name        = ConvertUtils.get_namespace_name(cursor)
         
-        print('parse enum', self.namespaced_class_name)
+        print('parse enum', self.ns_full_name)
         self._deep_iterate(self.cursor, 0)
 
     def _deep_iterate(self, cursor=None, depth=0):
@@ -37,11 +36,10 @@ class NativeEnum(object):
             # print('fields', field)
             self.fields.append(field)
 
-    def writeLuaEnum(self, f):
-        f.write('\n\n%s = {' % ConvertUtils.transTypeNameToLua(self.namespaced_class_name))
-        for (name, value) in self.fields:
-            f.write('\n    %s = %d,' % (name, value))
-        f.write('\n}')
+    @property
+    def luaNSName(self):
+        return ConvertUtils.nsNameToLuaName(self.ns_full_name)
 
-    def writeLuaDesc(self, f):
-        f.write('\n\n---@alias %s number' % ConvertUtils.transTypeNameToLua(self.namespaced_class_name))
+    @property
+    def luaClassName(self):
+        return ConvertUtils.transTypeNameToLua(self.ns_full_name)

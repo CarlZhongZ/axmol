@@ -141,7 +141,7 @@ class NativeType(object):
         self.param_types = None
         self.ret_type = None
 
-        self.namespaced_name = '' # with namespace and class name
+        self.ns_full_name = '' # with namespace and class name
         self.name = ''
         self.whole_name = ''
         self.lua_name = ''
@@ -151,20 +151,20 @@ class NativeType(object):
         self.is_reference = False
 
     def _onParseCodeEndCheck(self, useTypes):
-        namespaced_name = self.namespaced_name
+        ns_full_name = self.ns_full_name
         if self.is_enum:
-            assert(namespaced_name in ConvertUtils.parsedEnums, namespaced_name)
+            assert(ns_full_name in ConvertUtils.parsedEnums, ns_full_name)
         elif self.is_class:
-            if namespaced_name in ConvertUtils.parsedEnums:
+            if ns_full_name in ConvertUtils.parsedEnums:
                 # 由字符串创建的 type 不能判定是否为 枚举类型
                 self.is_class = False
                 self.is_enum = True
 
         if self.is_enum or self.is_class:
-            # print('sssss not_supported', self.namespaced_name)
-            if self.namespaced_name not in useTypes:
+            # print('sssss not_supported', self.ns_full_name)
+            if self.ns_full_name not in useTypes:
                 self.not_supported = True
-            elif self.namespaced_name in ConvertUtils.parsedStructs and ConvertUtils.parsedStructs[self.namespaced_name].isNotSupported:
+            elif self.ns_full_name in ConvertUtils.parsedStructs and ConvertUtils.parsedStructs[self.ns_full_name].isNotSupported:
                 self.not_supported = True
 
 
@@ -183,24 +183,24 @@ class NativeType(object):
         cdeclDisplayName = cdecl.displayname # 去掉 typedef 的原型
         if len(cdeclDisplayName) > 0 and cdeclDisplayName != declDisplayName:
             displayname = cdeclDisplayName
-            self.namespaced_name = ConvertUtils.get_namespaced_name(cdecl)
+            self.ns_full_name = ConvertUtils.get_namespaced_name(cdecl)
         else:
-            self.namespaced_name = ConvertUtils.get_namespaced_name(decl)
+            self.ns_full_name = ConvertUtils.get_namespaced_name(decl)
             displayname = declDisplayName
 
         self.name = displayname
-        self.lua_name = ConvertUtils.transTypeNameToLua(self.namespaced_name)
+        self.lua_name = ConvertUtils.transTypeNameToLua(self.ns_full_name)
 
-        if self.namespaced_name not in allTypes:
+        if self.ns_full_name not in allTypes:
             assert(decl.spelling == cdecl.spelling, decl.spelling + '|' + cdecl.spelling)
             assert(decl.displayname == cdecl.displayname, decl.displayname + '|' + cdecl.displayname)
 
             # CursorKind.ENUM_DECL ENUM_DECL TYPE_ALIAS_DECL TYPEDEF_DECL NO_DECL_FOUND
             if decl.kind == cdecl.kind and ntype.kind == cntype.kind:
-                print('@@@ type', self.namespaced_name, decl.kind, ntype.kind)
+                print('@@@ type', self.ns_full_name, decl.kind, ntype.kind)
             else:
-                print('@@@ type', self.namespaced_name, decl.kind, ntype.kind, '|', cdecl.kind, cntype.kind)
-            allTypes[self.namespaced_name] = self
+                print('@@@ type', self.ns_full_name, decl.kind, ntype.kind, '|', cdecl.kind, cntype.kind)
+            allTypes[self.ns_full_name] = self
 
         if cdecl.kind == cindex.CursorKind.NO_DECL_FOUND:
             if cntype.kind in numberTypes:
@@ -233,7 +233,7 @@ class NativeType(object):
         if cntype.kind == cindex.TypeKind.POINTER:
             nt = NativeType.from_type(cntype.get_pointee())
             nt.is_pointer = True
-            nt.whole_name = nt.namespaced_name + ' *'
+            nt.whole_name = nt.ns_full_name + ' *'
 
             nt.is_const = cntype.get_pointee().is_const_qualified()
             if nt.is_const:
@@ -250,7 +250,7 @@ class NativeType(object):
         elif cntype.kind == cindex.TypeKind.LVALUEREFERENCE:
             nt = NativeType.from_type(cntype.get_pointee())
             nt.is_reference = True
-            nt.whole_name = nt.namespaced_name + ' &'
+            nt.whole_name = nt.ns_full_name + ' &'
 
             nt.is_const = cntype.get_pointee().is_const_qualified()
             if nt.is_const:
@@ -288,18 +288,18 @@ class NativeType(object):
             self.is_boolean = True
             self.lua_name = 'boolean'
         else:
-            self.namespaced_name = typename
+            self.ns_full_name = typename
             self.lua_name = ConvertUtils.transTypeNameToLua(typename)
             self._tryParseNSName()
 
     def _tryParseNSName(self):
-        if self.namespaced_name in _stringTypes:
+        if self.ns_full_name in _stringTypes:
             self.is_string = True
             self.lua_name = 'string'
             return
 
         for parseFun in _arrayParseFun:
-            isArray, arrayType = parseFun(self.namespaced_name, self.name)
+            isArray, arrayType = parseFun(self.ns_full_name, self.name)
             if isArray:
                 self.is_array = True
                 self.array_ele_type = arrayType
@@ -307,7 +307,7 @@ class NativeType(object):
                 return
 
         for parseFun in _tableParseFun:
-            isTable, tableType = parseFun(self.namespaced_name, self.name)
+            isTable, tableType = parseFun(self.ns_full_name, self.name)
             if isTable:
                 self.is_table = True
                 self.table_ele_type = tableType
@@ -315,7 +315,7 @@ class NativeType(object):
                 return
 
         # parse function
-        self.is_function, self.ret_type, self.param_types = _tryParseFunction(self.namespaced_name, self.name)
+        self.is_function, self.ret_type, self.param_types = _tryParseFunction(self.ns_full_name, self.name)
         if self.is_function:
             name = ['fun(']
             i = 1
@@ -368,20 +368,20 @@ class NativeType(object):
             self.ret_type.testUseTypes(useTypes)
             for param in self.param_types:
                 param.testUseTypes(useTypes)
-        elif self.namespaced_name not in useTypes:
-            print('use type', self.namespaced_name)
-            useTypes.add(self.namespaced_name)
-            if self.namespaced_name in ConvertUtils.parsedStructs:
+        elif self.ns_full_name not in useTypes:
+            print('use type', self.ns_full_name)
+            useTypes.add(self.ns_full_name)
+            if self.ns_full_name in ConvertUtils.parsedStructs:
                 # 被类使用到的 struct 里面嵌套的 struct 也会被使用到， 只靠扫表层会查不全
-                print('### parsedStructs', self.namespaced_name)
-                ConvertUtils.parsedStructs[self.namespaced_name].testUseTypes(useTypes)
+                print('### parsedStructs', self.ns_full_name)
+                ConvertUtils.parsedStructs[self.ns_full_name].testUseTypes(useTypes)
 
     # @property
     # def isBasicType(self):
     #     return self.is_numeric or self.is_string or self.is_boolean or self.is_void
 
     def containsType(self, typeName):
-        if typeName == self.namespaced_name:
+        if typeName == self.ns_full_name:
             return True
             
         if self.is_function:

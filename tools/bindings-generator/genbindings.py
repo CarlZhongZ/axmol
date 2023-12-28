@@ -194,12 +194,8 @@ def main():
     extraFlags = _defaultIncludePath()
     
     # save config to file
-    if(sys.version_info.major >= 3):
-        import configparser # import ConfigParser
-        config = configparser.ConfigParser()
-    else:
-        import ConfigParser
-        config = ConfigParser.ConfigParser()
+    import configparser # import ConfigParser
+    config = configparser.ConfigParser()
     
     config.set('DEFAULT', 'androidndkdir', g_ndk_root)
     config.set('DEFAULT', 'clangllvmdir', llvm_path)
@@ -225,36 +221,11 @@ def main():
 
 
     try:
-
-        tolua_root = '%s/tools/tolua' % project_root
         output_dir = '%s/extensions/scripting/lua-bindings/auto' % project_root
-
-        cmd_args = {
-                    'ax_base.ini' : ('ax_base', 'axlua_base_auto'), \
-                    # 'ax_backend.ini' : ('ax_backend', 'axlua_backend_auto'), \
-                    # 'ax_extension.ini' : ('ax_extension', 'axlua_extension_auto'), \
-                    # 'ax_ui.ini' : ('ax_ui', 'axlua_ui_auto'), \
-                    # 'ax_studio.ini' : ('ax_studio', 'axlua_studio_auto'), \
-                    # 'ax_spine.ini' : ('ax_spine', 'axlua_spine_auto'), \
-                    # 'ax_physics.ini' : ('ax_physics', 'axlua_physics_auto'), \
-                    # 'ax_video.ini' : ('ax_video', 'axlua_video_auto'), \
-                    # 'ax_controller.ini' : ('ax_controller', 'axlua_controller_auto'), \
-                    # 'ax_3d.ini': ('ax_3d', 'axlua_3d_auto'), \
-                    # 'ax_audioengine.ini': ('ax_audioengine', 'axlua_audioengine_auto'), \
-                    # 'ax_csloader.ini' : ('ax_csloader', 'axlua_csloader_auto'), \
-                    # 'ax_webview.ini' : ('ax_webview', 'axlua_webview_auto'), \
-                    # 'ax_physics3d.ini' : ('ax_physics3d', 'axlua_physics3d_auto'), \
-                    # 'ax_navmesh.ini' : ('ax_navmesh', 'axlua_navmesh_auto'), \
-                    }
-        target = 'lua'
-        generator_py = '%s/generatorLuaClassDesc.py' % cxx_generator_root
-        for key in cmd_args.keys():
-            args = cmd_args[key]
-            cfg = '%s/%s' % (tolua_root, key)
-            print('Generating bindings for %s...' % (key[:-4]))
-            command = '%s %s %s -s %s -t %s -o %s -n %s' % (python_bin, generator_py, cfg, args[0], target, output_dir, args[1])
-            print(command)
-            _run_cmd(command)
+        sections = 'ax_base'
+        command = '%s generatorLuaClassDesc.py ax_base.ini -s %s -o %s' % (python_bin, sections, output_dir)
+        print(command)
+        _run_cmd(command)
 
         print('---------------------------------')
         print('Generating lua bindings succeeds.')

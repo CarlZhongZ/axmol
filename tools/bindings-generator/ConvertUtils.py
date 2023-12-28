@@ -15,6 +15,7 @@ parsedEnums = {}
 
 parsedStructs = {}
 
+# 只会导出 ns_map 记录的命名空间中的类
 ns_map = (
     ("ax::experimental::ui::", "axexp."),
     ("ax::experimental::", "axexp."),
@@ -26,17 +27,18 @@ ns_map = (
     ("spine::", "sp."),
 )
 
+def nsNameToLuaName(namespace_name):
+    for ns, luaName in ns_map:
+        if namespace_name.startswith(ns):
+            return luaName[0:-1]
+
+    return None
+
 def isTargetedNamespace(cursor):
     if len(cursor.displayname) == 0:
         return False
-    
-    namespaced_name = get_namespaced_name(cursor)
 
-    for ns, _ in ns_map:
-        if namespaced_name.startswith(ns):
-            return True
-        
-    return False
+    return nsNameToLuaName(get_namespace_name(cursor)) is not None
 
 def transTypeNameToLua(nameSpaceTypeName):
     for k, v in ns_map:

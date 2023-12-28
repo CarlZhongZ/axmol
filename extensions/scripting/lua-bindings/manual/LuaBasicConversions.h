@@ -69,6 +69,8 @@ public:
         return nullptr;
     }
 
+    static void registerAutoCode(lua_State* L);
+
     template <class T>
     static void tolua_push_value(lua_State* L, const T& value)
     {

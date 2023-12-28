@@ -139,8 +139,7 @@ bool LuaStack::init()
 
     ToluaConvert::g_luaType.clear();
 
-#if AX_USE_PHYSICS
-#endif
+    ToluaConvert::registerAutoCode(_state);
 
 #if (AX_TARGET_PLATFORM == AX_PLATFORM_IOS || AX_TARGET_PLATFORM == AX_PLATFORM_MAC)
     LuaObjcBridge::luaopen_luaoc(_state);

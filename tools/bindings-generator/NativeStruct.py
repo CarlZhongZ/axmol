@@ -16,14 +16,13 @@ class NativeStruct(object):
         # the cursor to the implementation
         self.cursor = cursor
         self.class_name = cursor.displayname
-        self.namespaced_class_name = None
         self.fields = []
         self._current_visibility = cindex.AccessSpecifier.PRIVATE
 
-        self.namespaced_class_name = ConvertUtils.get_namespaced_name(cursor)
+        self.ns_full_name = ConvertUtils.get_namespaced_name(cursor)
         self.namespace_name        = ConvertUtils.get_namespace_name(cursor)
 
-        print('parse struct', self.namespaced_class_name)
+        print('parse struct', self.ns_full_name)
         self._deep_iterate(self.cursor, 0)
 
     def _deep_iterate(self, cursor=None, depth=0):
@@ -40,16 +39,6 @@ class NativeStruct(object):
         for field in self.fields:
             field.testUseTypes(useTypes)
 
-    def writeLuaDesc(self, f):
-        if self.isNotSupported:
-            print('struct not support:%s' % self.namespaced_class_name)
-            return
-
-        f.write('\n\n-- struct:%s' % self.namespaced_class_name)
-        f.write('\n---@class %s' %  ConvertUtils.transTypeNameToLua(self.namespaced_class_name))
-        for field in self.fields:
-            field.writeLuaDesc(f)
-
     @property
     def isNotSupported(self):
         for field in self.fields:
@@ -62,3 +51,11 @@ class NativeStruct(object):
             if field.containsType(typeName):
                 return True
         return False
+
+    @property
+    def luaNSName(self):
+        return ConvertUtils.nsNameToLuaName(self.ns_full_name)
+
+    @property
+    def luaClassName(self):
+        return ConvertUtils.transTypeNameToLua(self.ns_full_name)

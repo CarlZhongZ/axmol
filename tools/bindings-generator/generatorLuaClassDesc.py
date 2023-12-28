@@ -29,30 +29,16 @@ class Generator(object):
         self.outdir = opts['outdir']
         print('search_paths=' + opts['search_paths'])
         self.search_paths = opts['search_paths'].split(';')
-        self.prefix = opts['prefix']
         self.headers = opts['headers'].split(' ')
         self.classes = opts['classes']
         self.classes_have_no_parents = opts['classes_have_no_parents'].split(' ')
         self.base_classes_to_skip = opts['base_classes_to_skip'].split(' ')
         self.abstract_classes = opts['abstract_classes'].split(' ')
         self.clang_args = opts['clang_args']
-        self.target = opts['target']
-        self.remove_prefix = opts['remove_prefix']
-        self.target_ns = opts['target_ns']
-        self.cpp_ns = opts['cpp_ns']
-        self.impl_file = None
-        self.head_file = None
         self.skip_classes = {}
-        self.bind_fields = {}
         self.generated_classes = {}
         self.rename_functions = {}
         self.rename_classes = {}
-        self.replace_headers = {}
-        self.out_file = opts['out_file']
-        self.script_type = opts['script_type']
-        self.macro_judgement = opts['macro_judgement']
-        self.hpp_headers = opts['hpp_headers']
-        self.cpp_headers = opts['cpp_headers']
         self.win32_clang_flags = opts['win32_clang_flags']
 
         extend_clang_args = []
@@ -81,16 +67,6 @@ class Generator(object):
                     self.skip_classes[class_name] = match.group(1).split(" ")
                 else:
                     raise Exception("invalid list of skip methods")
-        if opts['field']:
-            list_of_fields = re.split(",\n?", opts['field'])
-            for field in list_of_fields:
-                class_name, fields = field.split("::")
-                self.bind_fields[class_name] = []
-                match = re.match("\\[([^]]+)\\]", fields)
-                if match:
-                    self.bind_fields[class_name] = match.group(1).split(" ")
-                else:
-                    raise Exception("invalid list of bind fields")
         if opts['rename_functions']:
             list_of_function_renames = re.split(",\n?", opts['rename_functions'])
             for rename in list_of_function_renames:
@@ -110,12 +86,6 @@ class Generator(object):
             for rename in list_of_class_renames:
                 class_name, renamed_class_name = rename.split("::")
                 self.rename_classes[class_name] = renamed_class_name
-
-        if opts['replace_headers']:
-            list_of_replace_headers = re.split(",\n?", opts['replace_headers'])
-            for replace in list_of_replace_headers:
-                header, replaced_header = replace.split("::")
-                self.replace_headers[header] = replaced_header
 
     def should_rename_function(self, class_name, method_name):
         if (class_name in self.rename_functions) and (method_name in self.rename_functions[class_name]):
@@ -150,28 +120,6 @@ class Generator(object):
                                 return True
         if verbose:
             print("%s will be accepted (%s, %s)" % (class_name, key, self.skip_classes[key]))
-        return False
-
-    def should_bind_field(self, class_name, field_name, verbose=False):
-        if class_name == "*" and "*" in self.bind_fields:
-            for func in self.bind_fields["*"]:
-                if re.match(func, field_name):
-                    return True
-        else:
-            for key in self.bind_fields.keys():
-                if key == "*" or re.match("^" + key + "$", class_name):
-                    if verbose:
-                        print("%s in bind_fields" % (class_name))
-                    if len(self.bind_fields[key]) == 1 and self.bind_fields[key][0] == "*":
-                        if verbose:
-                            print("All public fields of %s will be bound" % (class_name))
-                        return True
-                    if field_name != None:
-                        for field in self.bind_fields[key]:
-                            if re.match(field, field_name):
-                                if verbose:
-                                    print("Field %s of %s will be bound" % (field_name, class_name))
-                                return True
         return False
 
     def in_listed_classes(self, class_name):
@@ -211,114 +159,82 @@ class Generator(object):
 
     def generate_code(self):
         self._parse_headers()
-        self.processUsedEnumsAndStructs()
 
-        # 
-        assert False
-        
-        self.impl_file = open(os.path.join(self.outdir, self.out_file + ".cpp"), "wt+", encoding='utf8', newline='\n')
-        self.head_file = open(os.path.join(self.outdir, self.out_file + ".hpp"), "wt+", encoding='utf8', newline='\n')
+        parsedEnums = ConvertUtils.parsedEnums
+        parsedStructs = ConvertUtils.parsedStructs
 
-        layout_h = Template(file=os.path.join(self.target, "templates", "layout_head.h.tmpl"),
-                            searchList=[self])
-        layout_c = Template(file=os.path.join(self.target, "templates", "layout_head.c.tmpl"),
-                            searchList=[self])
-        self.head_file.write(str(layout_h))
-        self.impl_file.write(str(layout_c))
-
-        # 生成类代码
-        parsedClass = set()
-        for k in self.sorted_classes():
-            if k in parsedClass:
-                continue
-            parsedClass.add(k)
-            self.generated_classes[k].generate_code()
-
-        layout_h = Template(file=os.path.join(self.target, "templates", "layout_foot.h.tmpl"),
-                            searchList=[self])
-        layout_c = Template(file=os.path.join(self.target, "templates", "layout_foot.c.tmpl"),
-                            searchList=[self])
-        self.head_file.write(str(layout_h))
-        self.impl_file.write(str(layout_c))
-
-        self.impl_file.close()
-        self.head_file.close()
-
-    # 遍历注册的类, 搜索用到的 enum 和 struct
-    def processUsedEnumsAndStructs(self):
         useTypes = set()
         realUseTypes = set()
         for (_, nativeClass) in self.generated_classes.items():
             nativeClass.testUseTypes(useTypes)
-            realUseTypes.add(nativeClass.namespaced_class_name)
-        
-        structTypes = []
+            realUseTypes.add(nativeClass.ns_full_name)
+
         enumTypes = []
+        structTypes = []
         for tp in useTypes:
-            if tp in ConvertUtils.parsedEnums:
+            if tp in parsedEnums:
                 enumTypes.append(tp)
                 realUseTypes.add(tp)
-            elif tp in ConvertUtils.parsedStructs:
+            elif tp in parsedStructs:
                 structTypes.append(tp)
                 realUseTypes.add(tp)
 
         NativeType.onParseCodeEnd(realUseTypes)
 
-        structTypes.sort()
         enumTypes.sort()
+        structTypes.sort()
 
         # 根据依赖性排序
         dependantSortedStructTypes = []
-        i = 0
         for i in range(len(structTypes)):
             tp = structTypes[i]
             for j in range(i):
-                if ConvertUtils.parsedStructs[structTypes[j]].containsType(tp):
+                if parsedStructs[structTypes[j]].containsType(tp):
                     dependantSortedStructTypes.insert(j, tp)
                     break
             else:
                 dependantSortedStructTypes.append(tp)
         structTypes = dependantSortedStructTypes
 
-
-        fAutoGenCodes = open(os.path.join(self.outdir, "lua_auto_gen_codes.h"), "wt+",
-                              encoding='utf8', newline='\n')
-        fAutoGenCodesCpp = open(os.path.join(self.outdir, "lua_auto_gen_codes.cpp"), "wt+",
-                              encoding='utf8', newline='\n')
-        
-        fAutoGenCodesCpp.write('#include "lua_auto_gen_codes.h"')
-
-        fAutoGenCodes.write(str(Template(file=os.path.join(self.target, "templates", "layout_head.c.tmpl"),
-                            searchList=[self])))
-
-        fAutoGenCodes.write(str(Template(file=os.path.join(self.target, "templates", "struct_convert.h.tmpl"),
-                                    searchList=[self, {
-                                        'structTypes': structTypes,
-                                        'parsedStructs': ConvertUtils.parsedStructs,
-                                    }])))
+        classTypes = self.sorted_classes()
 
         f = open(os.path.join(self.outdir, "engine_types.lua"), "wt+", encoding='utf8', newline='\n')
-        for tp in structTypes:
-            struct = ConvertUtils.parsedStructs[tp]
-            struct.writeLuaDesc(f)
+        f.write(str(Template(file='code_template/engine_types.lua.tmpl',
+                                    searchList=[{
+                                        'enumTypes': enumTypes,
+                                        'parsedEnums' :parsedEnums,
+                                        'structTypes': structTypes,
+                                        'parsedStructs': parsedStructs,
+                                        'classTypes': classTypes,
+                                        'generated_classes': self.generated_classes,
+                                    }])))
 
         fEnum = open(os.path.join(self.outdir, "engine_enums.lua"), "wt+", encoding='utf8', newline='\n')
-        for tp in enumTypes:
-            enum = ConvertUtils.parsedEnums[tp]
-            enum.writeLuaDesc(f)
-            enum.writeLuaEnum(fEnum)
+        fEnum.write(str(Template(file='code_template/engine_enums.lua.tmpl',
+                                    searchList=[{
+                                        'enumTypes': enumTypes,
+                                        'parsedEnums' :parsedEnums,
+                                    }])))
 
-        classes = []
-        parsedClass = set()
-        for k in self.sorted_classes():
-            if k in parsedClass:
-                continue
-            parsedClass.add(k)
-            classes.append(k)
+        # 生成类代码
+        # parsedClass = set()
+        # for k in self.sorted_classes():
+        #     if k in parsedClass:
+        #         continue
+        #     parsedClass.add(k)
+        #     self.generated_classes[k].generate_code()
 
-        classes.sort()
-        for cls in classes:
-            self.generated_classes[cls].writeLuaDesc(f)
+        # gen cpp audo code
+        fAutoGenCodesCpp = open(os.path.join(self.outdir, "lua_auto_gen_codes.cpp"), "wt+",
+                              encoding='utf8', newline='\n')
+
+        fAutoGenCodesCpp.write(str(Template(file='code_template/lua_auto_gen_codes.cpp.tmpl',
+                                    searchList=[self, {
+                                        'structTypes': structTypes,
+                                        'classTypes': classTypes,
+                                        'parsedStructs': parsedStructs,
+                                        'generated_classes': self.generated_classes,
+                                    }])))
 
     def _pretty_print(self, diagnostics):
         errors=[]
@@ -361,7 +277,6 @@ class Generator(object):
             if cursor == cursor.type.get_declaration() and len(get_children_array_from_iter(cursor.get_children())) > 0:
                 if ConvertUtils.isTargetedNamespace(cursor) and self.in_listed_classes(cursor.displayname):
                     if not (cursor.displayname in self.generated_classes):
-                        print('@@@ Class', ConvertUtils.get_namespaced_name(cursor))
                         nclass = NativeClass(cursor, self)
                         self.generated_classes[cursor.displayname] = nclass
         elif cursor.kind == cindex.CursorKind.STRUCT_DECL:
@@ -369,7 +284,6 @@ class Generator(object):
                 if ConvertUtils.isTargetedNamespace(cursor):
                     nsName = ConvertUtils.get_namespaced_name(cursor)
                     if nsName not in ConvertUtils.parsedStructs:
-                        print('@@@ Struct', nsName)
                         enum = NativeStruct(cursor)
                         ConvertUtils.parsedStructs[nsName] = enum
         elif cursor.kind == cindex.CursorKind.ENUM_DECL:
@@ -377,7 +291,6 @@ class Generator(object):
                 if ConvertUtils.isTargetedNamespace(cursor):
                     nsName = ConvertUtils.get_namespaced_name(cursor)
                     if nsName not in ConvertUtils.parsedEnums:
-                        print('@@@ Enum', nsName)
                         enum = NativeEnum(cursor)
                         ConvertUtils.parsedEnums[nsName] = enum
 
@@ -406,12 +319,8 @@ def main():
     parser = OptionParser("usage: %prog [options] {configfile}")
     parser.add_option("-s", action="store", type="string", dest="section",
                         help="sets a specific section to be converted")
-    parser.add_option("-t", action="store", type="string", dest="target",
-                        help="specifies the target vm. Will search for TARGET.yaml")
     parser.add_option("-o", action="store", type="string", dest="outdir",
                         help="specifies the output directory for generated C++ code")
-    parser.add_option("-n", action="store", type="string", dest="out_file",
-                        help="specifcies the name of the output file, defaults to the prefix in the .ini file")
 
     (opts, args) = parser.parse_args()
 
@@ -435,72 +344,39 @@ def main():
 
     sections = []
     if opts.section:
-        if (opts.section in config.sections()):
-            sections = []
-            sections.append(opts.section)
-        else:
-            raise Exception("Section not found in config file")
+        for ss in opts.section.split('|'):
+            if (ss in config.sections()):
+                sections.append(ss)
+            else:
+                raise Exception("Section not found in config file")
     else:
         print("processing all sections")
         sections = config.sections()
 
-    # find available targets
-    targetdir = os.path.join(workingdir, "targets")
-    targets = []
-    if (os.path.isdir(targetdir)):
-        targets = [entry for entry in os.listdir(targetdir)
-                    if (os.path.isdir(os.path.join(targetdir, entry)))]
-    if 0 == len(targets):
-        raise Exception("No targets defined")
-
-    if opts.target:
-        if (opts.target in targets):
-            targets = []
-            targets.append(opts.target)
-
-    if opts.outdir:
-        outdir = opts.outdir
-    else:
-        outdir = os.path.join(workingdir, "gen")
+    outdir = opts.outdir
     if not os.path.exists(outdir):
         os.makedirs(outdir)
 
-    for t in targets:
-        # Fix for hidden '.svn', '.cvs' and '.git' etc. folders - these must be ignored or otherwise they will be interpreted as a target.
-        if t == ".svn" or t == ".cvs" or t == ".git" or t == ".gitignore":
-            continue
+    print( "\n.... Generating bindings")
+    for s in sections:
+        print( "\n.... .... Processing section", s, "\n")
+        gen_opts = {
+            'headers': config.get(s, 'headers'),
+            'classes': config.get(s, 'classes').split(' '),
+            'clang_args': (config.get(s, 'clang_args') or "").split(" "),
+            'classes_have_no_parents': config.get(s, 'classes_have_no_parents'),
+            'base_classes_to_skip': config.get(s, 'base_classes_to_skip'),
+            'abstract_classes': config.get(s, 'abstract_classes'),
+            'skip': config.get(s, 'skip'),
+            'rename_functions': config.get(s, 'rename_functions'),
+            'rename_classes': config.get(s, 'rename_classes'),
+            'win32_clang_flags': (config.get(s, 'win32_clang_flags') or "").split(" ") if config.has_option(s, 'win32_clang_flags') else None,
 
-        print( "\n.... Generating bindings for target", t)
-        for s in sections:
-            print( "\n.... .... Processing section", s, "\n")
-            gen_opts = {
-                'prefix': config.get(s, 'prefix'),
-                'headers': config.get(s, 'headers'),
-                'replace_headers': config.get(s, 'replace_headers') if config.has_option(s, 'replace_headers') else None,
-                'classes': config.get(s, 'classes').split(' '),
-                'clang_args': (config.get(s, 'extra_arguments') or "").split(" "),
-                'target': os.path.join(workingdir, "targets", t),
-                'outdir': outdir,
-                'search_paths': os.path.abspath(os.path.join(config.get('DEFAULT', 'axdir'), 'core')) + ";" + os.path.abspath(os.path.join(config.get('DEFAULT', 'axdir'), 'extensions')),
-                'remove_prefix': config.get(s, 'remove_prefix'),
-                'target_ns': config.get(s, 'target_namespace'),
-                'cpp_ns': config.get(s, 'cpp_namespace').split(' ') if config.has_option(s, 'cpp_namespace') else None,
-                'classes_have_no_parents': config.get(s, 'classes_have_no_parents'),
-                'base_classes_to_skip': config.get(s, 'base_classes_to_skip'),
-                'abstract_classes': config.get(s, 'abstract_classes'),
-                'skip': config.get(s, 'skip'),
-                'field': config.get(s, 'field') if config.has_option(s, 'field') else None,
-                'rename_functions': config.get(s, 'rename_functions'),
-                'rename_classes': config.get(s, 'rename_classes'),
-                'out_file': opts.out_file or config.get(s, 'prefix'),
-                'script_type': t,
-                'macro_judgement': config.get(s, 'macro_judgement') if config.has_option(s, 'macro_judgement') else None,
-                'hpp_headers': config.get(s, 'hpp_headers').split(' ') if config.has_option(s, 'hpp_headers') else None,
-                'cpp_headers': config.get(s, 'cpp_headers').split(' ') if config.has_option(s, 'cpp_headers') else None,
-                'win32_clang_flags': (config.get(s, 'win32_clang_flags') or "").split(" ") if config.has_option(s, 'win32_clang_flags') else None
-                }
-            generator = Generator(gen_opts)
-            generator.generate_code()
+            'outdir': outdir,
+            'search_paths': os.path.abspath(os.path.join(config.get('DEFAULT', 'axdir'), 'core')) + ";" + os.path.abspath(os.path.join(config.get('DEFAULT', 'axdir'), 'extensions')),
+            }
+        generator = Generator(gen_opts)
+        generator.generate_code()
 
 if __name__ == '__main__':
     try:

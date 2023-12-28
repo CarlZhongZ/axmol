@@ -11,7 +11,8 @@ import ConvertUtils
 from NativeType import NativeType
 
 class NativeFunction(object):
-    def __init__(self, cursor):
+    def __init__(self, cursor, cls):
+        self.cls = cls
         self.cursor = cursor
         self.func_name = cursor.spelling
         self.signature_name = self.func_name
@@ -103,19 +104,22 @@ class NativeFunction(object):
             arg.testUseTypes(useTypes)
         self.ret_type.testUseTypes(useTypes)
 
-    def writeLuaDesc(self, f, cls):
+    @property
+    def luaFieldDesc(self):
         if self.isNotSupported:
             return
+        
+        ret = ['---@field %s fun(self: %s' % (self.func_name, self.cls.luaClassName)]
 
-        f.write('\n---@field %s fun(self: %s' % (self.func_name, ConvertUtils.transTypeNameToLua(cls.namespaced_class_name)))
         for i in range(self.min_args):
-            f.write(', %s: %s' % (self.argumtntTips[i] or 'p%d' % i, self.arguments[i].luaType))
+            ret.append(', %s: %s' % (self.argumtntTips[i] or 'p%d' % i, self.arguments[i].luaType))
 
         for i in range(self.min_args, len(self.arguments)):
-            f.write(', %s?: %s' % (self.argumtntTips[i] or 'p%d' % i, self.arguments[i].luaType))
-        f.write(')')
-        f.write(self.ret_type.luaType)
-        f.write(' @ function')
+            ret.append(', %s?: %s' % (self.argumtntTips[i] or 'p%d' % i, self.arguments[i].luaType))
+        ret.append('): ')
+        ret.append(self.ret_type.luaType)
+
+        return ''.join(ret)
 
     @property
     def isNotSupported(self):
@@ -208,9 +212,16 @@ class NativeOverloadedFunction(object):
         for fun in self.implementations:
             fun.testUseTypes(useTypes)
 
-    def writeLuaDesc(self, f, cls):
+    @property
+    def luaFieldDesc(self):
+        ret = []
         for impl in self.implementations:
-            impl.writeLuaDesc(f, cls)
+            desc = impl.luaFieldDesc
+            if desc:
+                ret.append(desc)
+
+        if ret:
+            return '\n'.join(ret)
     
     def containsType(self, typeName):
         for impl in self.implementations:
@@ -227,7 +238,7 @@ class NativeField(object):
         self.location = cursor.location
         self.signature_name = self.name
         self.ntype  = NativeType.from_type(cursor.type)
-        print('Field', self.name, self.ntype.namespaced_name)
+        # print('Field', self.name, self.ntype.ns_full_name)
 
     @staticmethod
     def can_parse(ntype):
@@ -246,12 +257,12 @@ class NativeField(object):
     def testUseTypes(self, useTypes):
         self.ntype.testUseTypes(useTypes)
 
-    def writeLuaDesc(self, f):
+    @property
+    def luaFieldDesc(self):
         if self.isNotSupported:
             return
 
-        f.write('\n---@field %s %s' %  (self.name, self.ntype.luaType))
-        f.write(' @ field')
+        return '---@field %s %s' %  (self.name, self.ntype.luaType)
 
     @property
     def isNotSupported(self):
