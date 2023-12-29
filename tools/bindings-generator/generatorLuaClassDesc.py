@@ -216,14 +216,6 @@ class Generator(object):
                                         'parsedEnums' :parsedEnums,
                                     }])))
 
-        # 生成类代码
-        # parsedClass = set()
-        # for k in self.sorted_classes():
-        #     if k in parsedClass:
-        #         continue
-        #     parsedClass.add(k)
-        #     self.generated_classes[k].generate_code()
-
         # gen cpp audo code
         fAutoGenCodesCpp = open(os.path.join(self.outdir, "lua_auto_gen_codes.cpp"), "wt+",
                               encoding='utf8', newline='\n')
@@ -297,21 +289,6 @@ class Generator(object):
         for node in cursor.get_children():
             # print("%s %s - %s" % (">" * depth, node.displayname, node.kind))
             self._deep_iterate(node, depth + 1)
-
-    def scriptname_from_native(self, namespace_class_name, namespace_name):
-        script_ns_dict = self.config['conversions']['ns_map']
-        for (k, v) in script_ns_dict.items():
-            if k == namespace_name:
-                return namespace_class_name.replace("*","").replace("const ", "").replace(k, v)
-        if namespace_class_name.find("::") >= 0:
-            if namespace_class_name.find("std::") == 0 or namespace_class_name.find("cxx17::") == 0:
-                return namespace_class_name
-            if namespace_class_name.find("tsl::") == 0 or namespace_class_name.find("hlookup::") == 0:
-                return namespace_class_name
-            else:
-                raise Exception("The namespace (%s) conversion wasn't set in 'ns_map' section of the conversions.yaml" % namespace_class_name)
-        else:
-            return namespace_class_name.replace("*","").replace("const ", "")
 
 def main():
     from optparse import OptionParser

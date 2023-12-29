@@ -9,7 +9,6 @@ from Cheetah.Template import Template
 
 import ConvertUtils
 from Fields import NativeFunction
-from Fields import NativeOverloadedFunction
 from Fields import NativeField
 
 class NativeClass(object):
@@ -20,6 +19,7 @@ class NativeClass(object):
         self.parents = []
         self.fields = []
         self.public_fields = []
+        self.constructors = []
         self.methods = {}
         self.static_methods = {}
         self.generator = generator
@@ -27,7 +27,6 @@ class NativeClass(object):
         self._current_visibility = cindex.AccessSpecifier.PRIVATE
         #for generate lua api doc
         self.override_methods = {}
-        self.has_constructor  = False
 
         self.target_class_name = generator.get_class_or_rename_class(self.class_name)
         self.namespace_name        = ConvertUtils.get_namespace_name(cursor)
@@ -79,26 +78,6 @@ class NativeClass(object):
             if not should_skip:
                 ret.append({"name": name, "impl": impl})
         return ret
-
-    def generate_code(self):
-        '''
-        actually generate the code. it uses the current target templates/rules in order to
-        generate the right code
-        '''
-
-        for m in self.methods_clean():
-            m['impl'].generate_code(self)
-        for m in self.static_methods_clean():
-            m['impl'].generate_code(self)
-        for m in self.override_methods_clean():
-            m['impl'].generate_code(self, is_override = True)
-        for m in self.public_fields:
-            m.generate_code(self)
-
-        # generate register section
-        register = Template(file=os.path.join(self.generator.target, "templates", "register.c.tmpl"),
-                            searchList=[{"current_class": self}])
-        self.generator.impl_file.write(str(register))
     
     def _deep_iterate(self, cursor=None, depth=0):
         for node in cursor.get_children():
@@ -146,37 +125,23 @@ class NativeClass(object):
             # skip if variadic
             if self._current_visibility == cindex.AccessSpecifier.PUBLIC and not cursor.type.is_function_variadic():
                 m = NativeFunction(cursor, self)
-                registration_name = self.generator.should_rename_function(self.class_name, m.func_name) or m.func_name
+                registration_name = self.generator.should_rename_function(self.class_name, m.name) or m.name
                 if m.is_override:
                     if NativeClass._is_method_in_parents(self, registration_name):
-                        if not (registration_name in self.override_methods):
-                            self.override_methods[registration_name] = m
-                        else:
-                            previous_m = self.override_methods[registration_name]
-                            if isinstance(previous_m, NativeOverloadedFunction):
-                                previous_m.append(m)
-                            else:
-                                self.override_methods[registration_name] = NativeOverloadedFunction([m, previous_m])
                         return False
 
+                idx = 1
+                curName = registration_name
                 if m.static:
-                    if not (registration_name in self.static_methods):
-                        self.static_methods[registration_name] = m
-                    else:
-                        previous_m = self.static_methods[registration_name]
-                        if isinstance(previous_m, NativeOverloadedFunction):
-                            previous_m.append(m)
-                        else:
-                            self.static_methods[registration_name] = NativeOverloadedFunction([m, previous_m])
+                    while curName in self.static_methods:
+                        curName = '%s_%d' % (registration_name, idx)
+                        idx += 1
+                    self.static_methods[curName] = m
                 else:
-                    if not (registration_name in self.methods):
-                        self.methods[registration_name] = m
-                    else:
-                        previous_m = self.methods[registration_name]
-                        if isinstance(previous_m, NativeOverloadedFunction):
-                            previous_m.append(m)
-                        else:
-                            self.methods[registration_name] = NativeOverloadedFunction([m, previous_m])
+                    while curName in self.methods:
+                        curName = '%s_%d' % (registration_name, idx)
+                        idx += 1
+                    self.methods[curName] = m
             return True
 
         elif self._current_visibility == cindex.AccessSpecifier.PUBLIC and cursor.kind == cindex.CursorKind.CONSTRUCTOR and not self.is_abstract:
@@ -184,20 +149,8 @@ class NativeClass(object):
             if cursor.displayname == self.class_name + "(const " + self.ns_full_name + " &)":
                 # print("Skip copy constructor: " + cursor.displayname)
                 return True
+            self.constructors.append(NativeFunction(cursor, self))
 
-            m = NativeFunction(cursor, self)
-            m.is_constructor = True
-            self.has_constructor = True
-            if not ('constructor' in self.methods):
-                self.methods['constructor'] = m
-            else:
-                previous_m = self.methods['constructor']
-                if isinstance(previous_m, NativeOverloadedFunction):
-                    previous_m.append(m)
-                else:
-                    m = NativeOverloadedFunction([m, previous_m])
-                    m.is_constructor = True
-                    self.methods['constructor'] = m
             return True
         # else:
             # print >> sys.stderr, "unknown cursor: %s - %s" % (cursor.kind, cursor.displayname)
@@ -236,3 +189,14 @@ class NativeClass(object):
     @property
     def luaClassName(self):
         return ConvertUtils.transTypeNameToLua(self.ns_full_name)
+
+    @property
+    def cppRefName(self):
+        return self.ns_full_name.replace('::', '_')
+    
+    @property
+    def hasConstructor(self):
+        for m in self.constructors:
+            if not m.isNotSupported:
+                return True
+        return False

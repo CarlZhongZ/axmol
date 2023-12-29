@@ -13,12 +13,10 @@ set(lua_bindings_files
     manual/LuaValue.cpp
     manual/AxluaLoader.h
     manual/AxluaLoader.cpp
-    manual/LuaBasicConversions.h
-    manual/LuaBasicConversions.cpp
     manual/lua_module_register.h
     manual/lua_module_register.cpp
-    manual/tolua_fix.h
-    manual/tolua_fix.cpp
+    manual/Tolua.h
+    manual/Tolua.cpp
     auto/lua_auto_gen_codes.cpp
     )
 

@@ -81,16 +81,16 @@ def genFunctionParms(parmsStrs, cur=None):
                 cur = pos + 2
             else:
                 cur = pos1 + 1
-                ++c1Count
+                c1Count += 1
         else:
             pos1 = parmsStrs.find(c1, cur)
             pos2 = parmsStrs.find(c2, cur)
             assert(pos2 != -1)
             if pos1 != -1 and pos1 < pos2:
-                ++c1Count
+                c1Count += 1
                 cur = pos1 + 1
             else:
-                --c1Count
+                c1Count -= 1
                 cur = pos2 + 1
 
     print('warning function params not valid:%s' % parmsStrs)

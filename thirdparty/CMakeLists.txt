@@ -356,7 +356,6 @@ endif(AX_WITH_ASTCENC)
 # use lua/js specific libs by property to prevent conflict
 if(AX_ENABLE_EXT_LUA)
     add_subdirectory(lua/${AX_LUA_ENGINE})
-    add_subdirectory(lua/tolua)
     add_subdirectory(lua/lua-cjson)
     set_property(TARGET thirdparty APPEND PROPERTY
         AX_LUA_DEPEND ${AX_LUA_ENGINE} tolua lua-cjson

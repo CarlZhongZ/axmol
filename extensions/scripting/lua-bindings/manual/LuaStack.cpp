@@ -26,11 +26,9 @@
  ****************************************************************************/
 
 #include "scripting/lua-bindings/manual/LuaStack.h"
-#include "scripting/lua-bindings/manual/tolua_fix.h"
 #include <string.h>
 extern "C" {
 #include "lua.h"
-#include "tolua++.h"
 #include "lualib.h"
 #include "lauxlib.h"
 }
@@ -45,7 +43,7 @@ extern "C" {
 #    include "scripting/lua-bindings/manual/platform/android/LuaJavaBridge.h"
 #endif
 
-#include "scripting/lua-bindings/manual/LuaBasicConversions.h"
+#include "scripting/lua-bindings/manual/Tolua.h"
 #include "base/ZipUtils.h"
 #include "platform/FileUtils.h"
 
@@ -88,7 +86,7 @@ int lua_release_print(lua_State* L)
 {
     std::string t;
     get_string_for_print(L, &t);
-    log("[LUA-print] %s", t.c_str());
+    ax::print("[LUA-print] %s", t.c_str());
 
     return 0;
 }
@@ -130,16 +128,12 @@ bool LuaStack::init()
 {
     _state = lua_open();
     luaL_openlibs(_state);
-    toluafix_open(_state);
 
     // Register our version of the global "print" function
-    const luaL_Reg global_functions[] = {
-        {"print", lua_print}, {"release_print", lua_release_print}, {"version", lua_version}, {nullptr, nullptr}};
-    luaL_register(_state, "_G", global_functions);
+    lua_register(_state, "print", lua_print);
+    lua_register(_state, "release_print", lua_release_print);
 
-    ToluaConvert::g_luaType.clear();
-
-    ToluaConvert::registerAutoCode(_state);
+    Tolua::registerAutoCode(_state);
 
 #if (AX_TARGET_PLATFORM == AX_PLATFORM_IOS || AX_TARGET_PLATFORM == AX_PLATFORM_MAC)
     LuaObjcBridge::luaopen_luaoc(_state);
@@ -205,12 +199,7 @@ void LuaStack::addLuaLoader(lua_CFunction func)
 
 void LuaStack::removeScriptObjectByObject(Ref* pObj)
 {
-    toluafix_remove_ccobject_by_refid(_state, pObj->_luaID);
-}
-
-void LuaStack::removeScriptHandler(int nHandler)
-{
-    toluafix_remove_function_by_refid(_state, nHandler);
+    Tolua::removeObjectByRefID(_state, pObj->_luaID);
 }
 
 int LuaStack::executeString(const char* codes)
@@ -291,7 +280,7 @@ void LuaStack::pushNil()
 
 void LuaStack::pushObject(Ref* objectValue, const char* typeName)
 {
-    toluafix_pushusertype_ccobject(_state, objectValue->_ID, &objectValue->_luaID, objectValue, typeName);
+    Tolua::pushCObject(_state, objectValue->_ID, &objectValue->_luaID, objectValue, typeName);
 }
 
 void LuaStack::pushLuaValue(const LuaValue& value)
@@ -348,18 +337,6 @@ void LuaStack::pushLuaValueArray(const LuaValueArray& array)
         lua_rawseti(_state, -2, index); /* table[index] = value, L: table */
         ++index;
     }
-}
-
-bool LuaStack::pushFunctionByHandler(int nHandler)
-{
-    toluafix_get_function_by_refid(_state, nHandler); /* L: ... func */
-    if (!lua_isfunction(_state, -1))
-    {
-        AXLOG("[LUA ERROR] function refid '%d' does not reference a Lua function", nHandler);
-        lua_pop(_state, 1);
-        return false;
-    }
-    return true;
 }
 
 int LuaStack::executeFunction(int numArgs)
@@ -423,21 +400,6 @@ int LuaStack::executeFunction(int numArgs)
     return ret;
 }
 
-int LuaStack::executeFunctionByHandler(int nHandler, int numArgs)
-{
-    int ret = 0;
-    if (pushFunctionByHandler(nHandler)) /* L: ... arg1 arg2 ... func */
-    {
-        if (numArgs > 0)
-        {
-            lua_insert(_state, -(numArgs + 1)); /* L: ... func arg1 arg2 ... */
-        }
-        ret = executeFunction(numArgs);
-    }
-    lua_settop(_state, 0);
-    return ret;
-}
-
 bool LuaStack::handleAssert(const char* msg)
 {
     if (_callFromLua == 0)
@@ -446,97 +408,6 @@ bool LuaStack::handleAssert(const char* msg)
     lua_pushfstring(_state, "ASSERT FAILED ON LUA EXECUTE: %s", msg ? msg : "unknown");
     lua_error(_state);
     return true;
-}
-
-int LuaStack::reallocateScriptHandler(int nHandler)
-{
-    LUA_FUNCTION nNewHandle = -1;
-
-    if (pushFunctionByHandler(nHandler))
-    {
-        nNewHandle = toluafix_ref_function(_state, lua_gettop(_state), 0);
-    }
-    /*
-        toluafix_get_function_by_refid(_state,nNewHandle);
-        if (!lua_isfunction(_state, -1))
-        {
-            AXLOG("Error!");
-        }
-        lua_settop(_state, 0);
-    */
-    return nNewHandle;
-}
-
-int LuaStack::executeFunction(int handler,
-                              int numArgs,
-                              int numResults,
-                              const std::function<void(lua_State*, int)>& func)
-{
-    if (pushFunctionByHandler(handler)) /* L: ... arg1 arg2 ... func */
-    {
-        if (numArgs > 0)
-        {
-            lua_insert(_state, -(numArgs + 1)); /* L: ... func arg1 arg2 ... */
-        }
-
-        int functionIndex = -(numArgs + 1);
-
-        if (!lua_isfunction(_state, functionIndex))
-        {
-            AXLOG("value at stack [%d] is not function", functionIndex);
-            lua_pop(_state, numArgs + 1);  // remove function and arguments
-            return 0;
-        }
-
-        int traceCallback = 0;
-        lua_getglobal(_state, "__G__TRACKBACK__"); /* L: ... func arg1 arg2 ... G */
-        if (!lua_isfunction(_state, -1))
-        {
-            lua_pop(_state, 1); /* L: ... func arg1 arg2 ... */
-        }
-        else
-        {
-            lua_insert(_state, functionIndex - 1); /* L: ... G func arg1 arg2 ... */
-            traceCallback = functionIndex - 1;
-        }
-
-        int error = 0;
-        ++_callFromLua;
-        error = lua_pcall(_state, numArgs, numResults, traceCallback); /* L: ... [G] ret1 ret2 ... retResults*/
-        --_callFromLua;
-
-        if (error)
-        {
-            if (traceCallback == 0)
-            {
-                AXLOG("[LUA ERROR] %s", lua_tostring(_state, -1)); /* L: ... error */
-                lua_pop(_state, 1);                                // remove error message from stack
-            }
-            else /* L: ... G error */
-            {
-                lua_pop(_state, 2);  // remove __G__TRACKBACK__ and error message from stack
-            }
-            return 0;
-        }
-
-        // get return value,don't pass LUA_MULTRET to numResults,
-        do
-        {
-
-            if (numResults <= 0 || nullptr == func)
-                break;
-
-            func(_state, numResults);
-
-        } while (0);
-
-        if (traceCallback)
-        {
-            lua_pop(_state, 1);  // remove __G__TRACKBACK__ from stack      /* L: ... */
-        }
-    }
-
-    return 1;
 }
 
 int LuaStack::reload(const char* moduleFileName)

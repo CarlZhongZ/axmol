@@ -107,20 +107,6 @@ public:
     virtual void removeScriptObjectByObject(Ref* object);
 
     /**
-     * Remove Lua function reference by nHandler by setting toluafix_refid_function_mapping[nHandle] nil.
-     *
-     * @param nHandler the function reference index to find the corresponding Lua function pointer.
-     */
-    virtual void removeScriptHandler(int nHandler);
-
-    /**
-     * Reallocate Lua function reference index to the Lua function pointer to add reference.
-     *
-     * @param nHandler the function reference index to find the corresponding Lua function pointer.
-     */
-    virtual int reallocateScriptHandler(int nHandler);
-
-    /**
      * Execute script code contained in the given string.
      *
      * @param codes holding the valid script code that should be executed.
@@ -240,15 +226,6 @@ public:
     virtual void pushLuaValueArray(const LuaValueArray& array);
 
     /**
-     * Get the lua function pointer from toluafix_refid_function_mapping table by giving nHanlder.
-     * If the lua function pointer corresponding to the nHanlder isn't found, it would push nil on the top index of
-     * stack, then it would output the error log in the debug model.
-     *
-     * @return true if get the no-null function pointer otherwise false.
-     */
-    virtual bool pushFunctionByHandler(int nHandler);
-
-    /**
      * Execute the lua function on the -(numArgs + 1) index on the stack by the numArgs variables passed.
      *
      * @param numArgs the number of variables.
@@ -256,31 +233,6 @@ public:
      * function.
      */
     virtual int executeFunction(int numArgs);
-
-    /**
-     * Execute the lua function corresponding to the nHandler by the numArgs variables passed.
-     *
-     * @param nHandler the index count corresponding to the lua function.
-     * @param numArgs the number of variables.
-     * @return the return value is the same as executeFunction,please @see executeFunction.
-     */
-    virtual int executeFunctionByHandler(int nHandler, int numArgs);
-
-    /**
-     * Execute the lua function corresponding to the handler by the numArgs variables passed.
-     * By calling this function, the number of return value is numResults(may be > 1).
-     * All the return values are used in the callback func.
-     *
-     * @param handler the index count corresponding to the lua function.
-     * @param numArgs the number of variables.
-     * @param numResults the number of return value.
-     * @param func callback function which is called if the numResults > 0.
-     * @return 0 if it happen error or it hasn't return value, otherwise return 1.
-     */
-    virtual int executeFunction(int handler,
-                                int numArgs,
-                                int numResults,
-                                const std::function<void(lua_State*, int)>& func);
 
     /**
      * Handle the assert message.
