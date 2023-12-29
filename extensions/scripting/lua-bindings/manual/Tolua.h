@@ -28,6 +28,10 @@ public:
     static void add_member(lua_State* L, const char* name, lua_CFunction func);
     static void declare_end(lua_State* L);
 
+    static bool isusertype(lua_State* L, const char* name, int lo);
+    static void* tousertype(lua_State* L, const char* name, int lo);
+    static void pushusertype(lua_State* L, void* obj, const char* name);
+
     template <class T>
     static void tolua_push_value(lua_State* L, const T& value)
     {

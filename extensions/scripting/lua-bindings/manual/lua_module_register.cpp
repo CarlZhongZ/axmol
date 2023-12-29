@@ -26,15 +26,6 @@
 
 #include "scripting/lua-bindings/manual/lua_module_register.h"
 
-#include "scripting/lua-bindings/manual/network/axlua_network_manual.h"
-#include "scripting/lua-bindings/manual/cocostudio/axlua_cocostudio_manual.hpp"
-#include "scripting/lua-bindings/manual/extension/axlua_extension_manual.h"
-#include "scripting/lua-bindings/manual/ui/axlua_ui_manual.hpp"
-#include "scripting/lua-bindings/manual/spine/axlua_spine_manual.hpp"
-#include "scripting/lua-bindings/manual/3d/axlua_3d_manual.h"
-#include "scripting/lua-bindings/manual/audioengine/axlua_audioengine_manual.h"
-#include "scripting/lua-bindings/manual/physics3d/axlua_physics3d_manual.h"
-#include "scripting/lua-bindings/manual/navmesh/axlua_navmesh_manual.h"
 #include "lua_cjson.h"
 #include "yasio/bindings/yasio_axlua.hpp"
 
@@ -56,21 +47,6 @@ static void lua_register_extensions(lua_State* L)
 
 int lua_module_register(lua_State* L)
 {
-    // Don't change the module register order unless you know what your are doing
-    register_network_module(L);
-    register_cocostudio_module(L);
-    register_ui_module(L);
-    register_extension_module(L);
-    // TODO arnold
-    register_spine_module(L);
-    register_cocos3d_module(L);
-    register_audioengine_module(L);
-#if AX_USE_3D_PHYSICS && AX_ENABLE_BULLET_INTEGRATION
-    register_physics3d_module(L);
-#endif
-#if AX_USE_NAVMESH
-    register_navmesh_module(L);
-#endif
 
     // register extensions: yaiso, lua-cjson
     lua_register_extensions(L);

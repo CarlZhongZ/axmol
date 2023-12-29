@@ -90,6 +90,18 @@ void Tolua::declare_end(lua_State* L)
     lua_pop(L, 1);
 }
 
+bool Tolua::isusertype(lua_State* L, const char* name, int lo)
+{
+    return false;
+}
+
+void* Tolua::tousertype(lua_State* L, const char* name, int lo)
+{
+    return nullptr;
+}
+
+void Tolua::pushusertype(lua_State* L, void* obj, const char* name) {}
+
 void Tolua::removeObjectByRefID(lua_State* L, int refID) {}
 
 void Tolua::pushCObject(lua_State* L, int refid, int* p_refid, void* ptr, const char* type) {}

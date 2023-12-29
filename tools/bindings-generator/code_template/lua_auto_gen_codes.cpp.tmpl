@@ -52,14 +52,27 @@ void Tolua::tolua_get_value(lua_State* L, int loc, ${structInfo.ns_full_name} &v
     #if cls.hasConstructor
         ## finalize
 static int ${cls.cppRefName}__finalize(lua_State* L) {
+    AX_ASSERT(Tolua::isusertype(L, "${cls.luaClassName}", 1));
+    auto obj = (${cls.ns_full_name}*)Tolua::tousertype(L, "${cls.luaClassName}", 1);
+    delete obj;
     return 0;
 }
         ## constructors
         #for i in range(len(cls.constructors))
             #set func = cls.constructors[i]
             #if not func.isNotSupported
-static int ${cls.cppRefName}_constructor_${i}(lua_State* L) {
-    return 0;
+static int ${cls.cppRefName}__constructor__${i}(lua_State* L) {
+    #set params = []
+    #for i in range(len(func.arguments))
+        #set tp = func.arguments[i]
+    ${tp.cppDeclareTypeName} arg_${i};
+        #silent params.append('(%s) arg_%d' % (tp.cppRealDeclareTypeName, i))
+    Tolua::tolua_get_value(L, ${i}, arg_${i});
+    #end for
+
+    auto ret = new ${cls.ns_full_name}(${', '.join(params)});
+    Tolua::pushusertype(L, (void*)ret , "${cls.luaClassName}");
+    return 1;
 }
             #end if
         #end for
@@ -106,7 +119,7 @@ void register_${cls.cppRefName}(lua_State* L) {
         #for i in range(len(cls.constructors))
             #set func = cls.constructors[i]
             #if not func.isNotSupported
-    Tolua::add_member(L, "${i}", ${cls.cppRefName}_constructor_${i});
+    Tolua::add_member(L, "${i}", ${cls.cppRefName}__constructor__${i});
             #end if
         #end for
     Tolua::declare_end(L);
