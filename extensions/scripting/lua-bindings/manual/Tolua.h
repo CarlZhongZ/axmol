@@ -33,16 +33,10 @@ public:
     static void pushusertype(lua_State* L, void* obj, const char* name);
 
     template <class T>
-    static void tolua_push_value(lua_State* L, const T& value)
-    {
-        // lua_pushnumber(L, value);
-    }
+    static void tolua_push_value(lua_State* L, const T& value) {}
 
     template <class T>
-    static void tolua_get_value(lua_State* L, int loc, T& value)
-    {
-        // value = luaL_checknumber(L, loc);
-    }
+    static void tolua_get_value(lua_State* L, int loc, T& value) {}
 
     static void removeObjectByRefID(lua_State* L, int refID);
 

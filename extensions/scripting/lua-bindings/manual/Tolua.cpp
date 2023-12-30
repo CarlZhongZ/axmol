@@ -11,18 +11,6 @@ NS_AX_BEGIN
 
 std::unordered_map<uintptr_t, const char*> Tolua::luaType;
 
-template <>
-static void Tolua::tolua_push_value(lua_State* L, const bool& value)
-{
-    lua_pushboolean(L, value);
-}
-
-template <>
-static void Tolua::tolua_get_value(lua_State* L, int loc, bool& value)
-{
-    value = lua_toboolean(L, loc);
-}
-
 
 void Tolua::declare_ns(lua_State* L, const char* name)
 {

@@ -47,14 +47,8 @@ class NativeClass(object):
         '''
         ret = []
         for name, impl in self.methods.items():
-            should_skip = False
-            if name == 'constructor':
-                should_skip = True
-            else:
-                if self.generator.should_skip(self.class_name, name):
-                    should_skip = True
-            if not should_skip:
-                ret.append({"name": name, "impl": impl})
+            if not self.generator.should_skip(self.class_name, name):
+                ret.append(impl)
         return ret
 
     def static_methods_clean(self):
@@ -63,20 +57,8 @@ class NativeClass(object):
         '''
         ret = []
         for name, impl in self.static_methods.items():
-            should_skip = self.generator.should_skip(self.class_name, name)
-            if not should_skip:
-                ret.append({"name": name, "impl": impl})
-        return ret
-
-    def override_methods_clean(self):
-        '''
-        clean list of override methods (without the ones that should be skipped)
-        '''
-        ret = []
-        for name, impl in self.override_methods.items():
-            should_skip = self.generator.should_skip(self.class_name, name)
-            if not should_skip:
-                ret.append({"name": name, "impl": impl})
+            if not self.generator.should_skip(self.class_name, name):
+                ret.append(impl)
         return ret
     
     def _deep_iterate(self, cursor=None, depth=0):
@@ -124,7 +106,7 @@ class NativeClass(object):
         elif cursor.kind == cindex.CursorKind.CXX_METHOD and ConvertUtils.get_availability(cursor) != ConvertUtils.AvailabilityKind.DEPRECATED:
             # skip if variadic
             if self._current_visibility == cindex.AccessSpecifier.PUBLIC and not cursor.type.is_function_variadic():
-                m = NativeFunction(cursor, self)
+                m = NativeFunction(cursor, self, False)
                 registration_name = self.generator.should_rename_function(self.class_name, m.name) or m.name
                 if m.is_override:
                     if NativeClass._is_method_in_parents(self, registration_name):
@@ -137,11 +119,13 @@ class NativeClass(object):
                         curName = '%s_%d' % (registration_name, idx)
                         idx += 1
                     self.static_methods[curName] = m
+                    m.lua_func_name = curName
                 else:
                     while curName in self.methods:
                         curName = '%s_%d' % (registration_name, idx)
                         idx += 1
                     self.methods[curName] = m
+                    m.lua_func_name = curName
             return True
 
         elif self._current_visibility == cindex.AccessSpecifier.PUBLIC and cursor.kind == cindex.CursorKind.CONSTRUCTOR and not self.is_abstract:
@@ -149,7 +133,7 @@ class NativeClass(object):
             if cursor.displayname == self.class_name + "(const " + self.ns_full_name + " &)":
                 # print("Skip copy constructor: " + cursor.displayname)
                 return True
-            self.constructors.append(NativeFunction(cursor, self))
+            self.constructors.append(NativeFunction(cursor, self, True))
 
             return True
         # else:

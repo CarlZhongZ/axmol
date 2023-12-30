@@ -370,14 +370,11 @@ class NativeType(object):
     def cppDeclareTypeName(self):
         if self.is_pointer:
             return self.ns_full_name + ' *'
-        elif self.is_numeric:
-            return 'double'
         else:
             return self.ns_full_name
-
-    @property
-    def cppRealDeclareTypeName(self):
-        if self.is_pointer:
-            return self.ns_full_name + ' *'
-        else:
-            return self.ns_full_name
+        
+    def genGetCode(self, loc, varName):
+        return 'Tolua::tolua_get_value(L, %d, %s);' % (loc, varName)
+    
+    def genPushCode(self, varName):
+        return 'Tolua::tolua_push_value(L, %s);' % varName

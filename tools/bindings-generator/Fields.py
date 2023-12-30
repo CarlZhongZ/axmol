@@ -11,17 +11,18 @@ import ConvertUtils
 from NativeType import NativeType
 
 class NativeFunction(object):
-    def __init__(self, cursor, cls):
+    def __init__(self, cursor, cls, bConstructor):
         self.cls = cls
+        self.is_constructor = bConstructor
         self.cursor = cursor
         self.name = cursor.spelling
         self.arguments = []
         self.argumtntTips = []
         self.static = cursor.kind == cindex.CursorKind.CXX_METHOD and cursor.is_static_method()
-        self.implementations = []
         self.is_override = False
         self.ret_type = NativeType.from_type(cursor.result_type)
         self.comment = self.get_comment(cursor.raw_comment)
+        self.lua_func_name = None
 
         # parse the arguments
         for arg in cursor.get_arguments():
