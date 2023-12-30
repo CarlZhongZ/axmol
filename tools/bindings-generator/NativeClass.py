@@ -41,26 +41,52 @@ class NativeClass(object):
         print('parse class', self.ns_full_name)
         self._deep_iterate(self.cursor)
 
-    def methods_clean(self):
-        '''
-        clean list of methods (without the ones that should be skipped)
-        '''
+    @property
+    def validMethods(self):
         ret = []
         for name, impl in self.methods.items():
-            if not self.generator.should_skip(self.class_name, name):
+            if not self.generator.should_skip(self.class_name, name) and not impl.isNotSupported:
                 ret.append(impl)
         return ret
 
-    def static_methods_clean(self):
-        '''
-        clean list of static methods (without the ones that should be skipped)
-        '''
+    @property
+    def validStaticMethods(self):
         ret = []
         for name, impl in self.static_methods.items():
-            if not self.generator.should_skip(self.class_name, name):
+            if not self.generator.should_skip(self.class_name, name) and not impl.isNotSupported:
                 ret.append(impl)
         return ret
     
+    @property
+    def validFields(self):
+        ret = []
+        for m in self.public_fields:
+            if not m.isNotSupported:
+                ret.append(m)
+        
+        return ret
+    
+    @property
+    def validConstructors(self):
+        validStaticMethods  = self.validStaticMethods
+        info = {}
+        i = 1
+        for m in self.constructors:
+            if m.isNotSupported:
+                continue
+
+            curName = 'new'
+            while True:
+                if curName in validStaticMethods or curName in info:
+                    curName = 'new%d' % i
+                    i += 1
+                else:
+                    break
+
+            info[curName] = m
+
+        return info
+
     def _deep_iterate(self, cursor=None, depth=0):
         for node in cursor.get_children():
             # print("%s%s - %s" % ("> " * depth, node.displayname, node.kind))
@@ -89,11 +115,11 @@ class NativeClass(object):
             if not self.class_name in self.generator.classes_have_no_parents:
                 if parent_name and parent_name not in self.generator.base_classes_to_skip:
                     #if parent and self.generator.in_listed_classes(parent.displayname):
-                    if not (parent.displayname in self.generator.generated_classes):
+                    if not (parent.displayname in ConvertUtils.parsedClasses):
                         parent = NativeClass(parent, self.generator)
-                        self.generator.generated_classes[parent.class_name] = parent
+                        ConvertUtils.parsedClasses[parent.class_name] = parent
                     else:
-                        parent = self.generator.generated_classes[parent.displayname]
+                        parent = ConvertUtils.parsedClasses[parent.displayname]
 
                     self.parents.append(parent)
 
@@ -180,7 +206,20 @@ class NativeClass(object):
     
     @property
     def hasConstructor(self):
+        if self.isRefClass:
+            return False
+
         for m in self.constructors:
             if not m.isNotSupported:
                 return True
         return False
+
+    @property
+    def isRefClass(self):
+        if self.ns_full_name == 'ax::Ref':
+            return True
+
+        if self.parents:
+            return self.parents[0].isRefClass
+        else:
+            return False

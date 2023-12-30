@@ -138,94 +138,6 @@ public:
     virtual void clean();
 
     /**
-     * Pushes a integer number with value intValue onto the stack.
-     *
-     * @param intValue a integer number.
-     */
-    virtual void pushInt(int intValue);
-
-    /**
-     * Pushes a float number with value floatValue onto the stack.
-     *
-     * @param floatValue a float number.
-     */
-    virtual void pushFloat(float floatValue);
-
-    /**
-     * Pushes a long number with value longValue onto the stack.
-     *
-     * @param longValue a long number.
-     */
-    virtual void pushLong(long longValue);
-
-    /**
-     * Pushes a bool value with boolValue onto the stack.
-     *
-     * @param boolValue a bool value.
-     */
-    virtual void pushBoolean(bool boolValue);
-
-    /**
-     * Pushes the zero-terminated string pointed to by stringValue onto the stack.
-     *
-     * @param stringValue a pointer point to a zero-terminated string stringValue.
-     */
-    virtual void pushString(std::string_view stringValue);
-
-    /**
-     * Pushes the string pointed to by stringValue with size length onto the stack.
-     *
-     * @param stringValue a pointer point to the string stringValue.
-     * @param length the size.
-     */
-    virtual void pushString(const char* stringValue, int length);
-
-    /**
-     * Pushes a nil value onto the stack.
-     */
-    virtual void pushNil();
-
-    /**
-     * Pushes a Ref object onto the stack.
-     *
-     * @see toluafix_pushusertype_ccobject.
-     */
-    virtual void pushObject(Ref* objectValue, const char* typeName);
-
-    /**
-     * According to the type of LuaValue, it would called the other push function in the internal.
-     *   type                           function
-     * LuaValueTypeInt                   pushInt
-     * LuaValueTypeFloat                 pushFloat
-     * LuaValueTypeBoolean               pushBoolean
-     * LuaValueTypeString                pushString
-     * LuaValueTypeDict                  pushLuaValueDict
-     * LuaValueTypeArray                 pushLuaValueArray
-     * LuaValueTypeObject                pushObject
-     *
-     * @param value a LuaValue object.
-     */
-    virtual void pushLuaValue(const LuaValue& value);
-
-    /**
-     * Pushes a lua table onto the stack.
-     * The key of table is the key of LuaValueDict which is std::map.
-     * The value of table is according to the type of LuaValue of LuaValueDict by calling pushLuaValue,@see
-     * pushLuaValue.
-     *
-     * @param dict a LuaValueDict object.
-     */
-    virtual void pushLuaValueDict(const LuaValueDict& dict);
-
-    /**
-     * Pushes a lua array table onto the stack.
-     * The index of array table is begin at 1.
-     * The value of array table is according to the type of LuaValue of LuaValueDict by calling pushLuaValue,@see
-     * pushLuaValue.
-     */
-    virtual void pushLuaValueArray(const LuaValueArray& array);
-
-    /**
      * Execute the lua function on the -(numArgs + 1) index on the stack by the numArgs variables passed.
      *
      * @param numArgs the number of variables.
@@ -253,23 +165,6 @@ public:
      * @return 0, LUA_ERRSYNTAX or LUA_ERRMEM:.
      */
     int luaLoadBuffer(lua_State* L, const char* chunk, int chunkSize, const char* chunkName);
-
-    /**
-     * Load the Lua chunks from the zip file
-     *
-     * @param zipFilePath file path to zip file.
-     * @return 1 if load successfully otherwise 0.
-     */
-    int loadChunksFromZIP(const char* zipFilePath);
-
-    /**
-     * Load the Lua chunks from current lua_State.
-     *
-     * @param L the current lua_State.
-     * @return 1 if load successfully otherwise 0.
-     */
-    int luaLoadChunksFromZIP(lua_State* L);
-
 protected:
     LuaStack() : _state(nullptr), _callFromLua(0) {}
 

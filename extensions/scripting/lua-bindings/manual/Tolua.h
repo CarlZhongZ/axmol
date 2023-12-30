@@ -39,8 +39,6 @@ public:
     static void tolua_get_value(lua_State* L, int loc, T& value) {}
 
     static void removeObjectByRefID(lua_State* L, int refID);
-
-    static void pushCObject(lua_State* L, int refid, int* p_refid, void* ptr, const char* type);
 };
 
 NS_AX_END

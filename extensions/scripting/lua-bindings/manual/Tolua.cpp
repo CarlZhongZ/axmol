@@ -92,6 +92,5 @@ void Tolua::pushusertype(lua_State* L, void* obj, const char* name) {}
 
 void Tolua::removeObjectByRefID(lua_State* L, int refID) {}
 
-void Tolua::pushCObject(lua_State* L, int refid, int* p_refid, void* ptr, const char* type) {}
 
 NS_AX_END

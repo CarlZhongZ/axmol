@@ -91,7 +91,7 @@ void Tolua::tolua_get_value(lua_State* L, int loc, ${structInfo.ns_full_name} &v
 
 ## reister class
 #for clsType in $classTypes
-    #set cls = $generated_classes[clsType]
+    #set cls = $parsedClasses[clsType]
 
     #if cls.hasConstructor
         ## finalize
@@ -103,42 +103,29 @@ static int ${cls.cppRefName}__finalize(lua_State* L) {
 }
 
         ## constructors
-        #for i in range(len(cls.constructors))
-            #set func = cls.constructors[i]
-            #if func.isNotSupported
-                #continue
-            #end if
-static int ${cls.cppRefName}__constructor__${i}(lua_State* L) {
+        #for name, func in cls.validConstructors.items()
+static int ${cls.cppRefName}__${name}(lua_State* L) {
 $parseFunctionArgs(cls, func)
 }
         #end for
     #end if  ## cls.hasConstructor
 
     ## methods implementation
-    #for m in cls.methods_clean()
-        #if m.isNotSupported
-            #continue
-        #end if
+    #for m in cls.validMethods
 static int ${cls.cppRefName}_${m.lua_func_name}(lua_State* L) {
 $parseFunctionArgs(cls, m)
 }
     #end for
 
     ## static methods implementation
-    #for m in cls.static_methods_clean()
-        #if m.isNotSupported
-            #continue
-        #end if
+    #for m in cls.validStaticMethods
 static int ${cls.cppRefName}_${m.lua_func_name}__static(lua_State* L) {
 $parseFunctionArgs(cls, m)
 }
     #end for
 
     ## field implementation
-    #for m in cls.public_fields
-        #if m.isNotSupported
-            #continue
-        #end if
+    #for m in cls.validFields
 static int ${cls.cppRefName}_${m.name}__get(lua_State* L) {
     return 0;
 }
@@ -155,42 +142,33 @@ void register_${cls.cppRefName}(lua_State* L) {
 
     #if cls.hasConstructor
     Tolua::declare_member_type(L, "constructors");
-        #for i in range(len(cls.constructors))
-            #set func = cls.constructors[i]
-            #if not func.isNotSupported
-    Tolua::add_member(L, "${i}", ${cls.cppRefName}__constructor__${i});
-            #end if
+        #for name, func in cls.validConstructors.items()
+    Tolua::add_member(L, "${name}", ${cls.cppRefName}__${name});
         #end for
     Tolua::declare_end(L);
     #end if
-
-    #if cls.public_fields
+## 
+    #if cls.validFields
     Tolua::declare_member_type(L, "fields");
-        #for m in cls.public_fields
-            #if not m.isNotSupported
+        #for m in cls.validFields
     Tolua::add_member(L, "${m.name}.get", ${cls.cppRefName}_${m.name}__get);
     Tolua::add_member(L, "${m.name}.set", ${cls.cppRefName}_${m.name}__set);
-            #end if
-        #end for
     Tolua::declare_end(L);
+        #end for
     #end if
-
+## 
     #if cls.methods
     Tolua::declare_member_type(L, "methods");
-        #for m in cls.methods_clean()
-            #if not m.isNotSupported
+        #for m in cls.validMethods
     Tolua::add_member(L, "${m.lua_func_name}", ${cls.cppRefName}_${m.lua_func_name});
-            #end if
         #end for
     Tolua::declare_end(L);
     #end if
 
     #if cls.static_methods
     Tolua::declare_member_type(L, "static_methods");
-        #for m in cls.static_methods_clean()
-            #if not m.isNotSupported
+        #for m in cls.validStaticMethods
     Tolua::add_member(L, "${m.lua_func_name}", ${cls.cppRefName}_${m.lua_func_name}__static);
-            #end if
         #end for
     Tolua::declare_end(L);
     #end if
@@ -208,7 +186,7 @@ void Tolua::registerAutoCode(lua_State* L)
 	
 #set target_ns = None
 #for clsType in $classTypes
-    #set cls = $generated_classes[clsType]
+    #set cls = $parsedClasses[clsType]
     #if target_ns != cls.luaNSName
         #if target_ns != None
     declare_end(L);

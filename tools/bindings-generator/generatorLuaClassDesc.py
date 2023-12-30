@@ -21,6 +21,10 @@ from NativeEnum import NativeEnum
 from NativeStruct import NativeStruct
 from NativeType import NativeType
 
+import init_custom_cpp_types
+
+init_custom_cpp_types.init()
+
 class Generator(object):
     def __init__(self, opts):
         ConvertUtils.generator = self
@@ -36,7 +40,6 @@ class Generator(object):
         self.abstract_classes = opts['abstract_classes'].split(' ')
         self.clang_args = opts['clang_args']
         self.skip_classes = {}
-        self.generated_classes = {}
         self.rename_functions = {}
         self.rename_classes = {}
         self.win32_clang_flags = opts['win32_clang_flags']
@@ -137,8 +140,8 @@ class Generator(object):
         sorted classes in order of inheritance
         '''
         sorted_list = []
-        for class_name in self.generated_classes.keys():
-            nclass = self.generated_classes[class_name]
+        for class_name in ConvertUtils.parsedClasses.keys():
+            nclass = ConvertUtils.parsedClasses[class_name]
             sorted_list += self._sorted_parents(nclass)
         # remove dupes from the list
         no_dupes = []
@@ -151,9 +154,9 @@ class Generator(object):
         '''
         sorted_parents = []
         for p in nclass.parents:
-            if p.class_name in self.generated_classes.keys():
+            if p.class_name in ConvertUtils.parsedClasses.keys():
                 sorted_parents += self._sorted_parents(p)
-        if nclass.class_name in self.generated_classes.keys():
+        if nclass.class_name in ConvertUtils.parsedClasses.keys():
             sorted_parents.append(nclass.class_name)
         return sorted_parents
 
@@ -165,7 +168,7 @@ class Generator(object):
 
         useTypes = set()
         realUseTypes = set()
-        for (_, nativeClass) in self.generated_classes.items():
+        for (_, nativeClass) in ConvertUtils.parsedClasses.items():
             nativeClass.testUseTypes(useTypes)
             realUseTypes.add(nativeClass.ns_full_name)
 
@@ -181,8 +184,15 @@ class Generator(object):
 
         NativeType.onParseCodeEnd(realUseTypes)
 
+        validStructs = []
+        for tp in structTypes:
+            if parsedStructs[tp].isNotSupported:
+                continue
+            validStructs.append(tp)
+
         enumTypes.sort()
-        structTypes.sort()
+        validStructs.sort()
+        structTypes = validStructs
 
         # 根据依赖性排序
         dependantSortedStructTypes = []
@@ -206,7 +216,7 @@ class Generator(object):
                                         'structTypes': structTypes,
                                         'parsedStructs': parsedStructs,
                                         'classTypes': classTypes,
-                                        'generated_classes': self.generated_classes,
+                                        'parsedClasses': ConvertUtils.parsedClasses,
                                     }])))
 
         fEnum = open(os.path.join(self.outdir, "engine_enums.lua"), "wt+", encoding='utf8', newline='\n')
@@ -225,7 +235,7 @@ class Generator(object):
                                         'structTypes': structTypes,
                                         'classTypes': classTypes,
                                         'parsedStructs': parsedStructs,
-                                        'generated_classes': self.generated_classes,
+                                        'parsedClasses': ConvertUtils.parsedClasses,
                                     }])))
 
     def _pretty_print(self, diagnostics):
@@ -268,9 +278,9 @@ class Generator(object):
         if cursor.kind == cindex.CursorKind.CLASS_DECL:
             if cursor == cursor.type.get_declaration() and len(get_children_array_from_iter(cursor.get_children())) > 0:
                 if ConvertUtils.isTargetedNamespace(cursor) and self.in_listed_classes(cursor.displayname):
-                    if not (cursor.displayname in self.generated_classes):
+                    if not (cursor.displayname in ConvertUtils.parsedClasses):
                         nclass = NativeClass(cursor, self)
-                        self.generated_classes[cursor.displayname] = nclass
+                        ConvertUtils.parsedClasses[cursor.displayname] = nclass
         elif cursor.kind == cindex.CursorKind.STRUCT_DECL:
             if cursor == cursor.type.get_declaration() and len(get_children_array_from_iter(cursor.get_children())) > 0:
                 if ConvertUtils.isTargetedNamespace(cursor):

@@ -27,7 +27,7 @@ ${desc} @ field
 #end for
 
 #for classType in $classTypes
-    #set classInfo = $generated_classes[classType]
+    #set classInfo = $parsedClasses[classType]
 
 -- class:${classInfo.ns_full_name}
     #if classInfo.parents

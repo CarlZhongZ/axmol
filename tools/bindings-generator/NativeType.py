@@ -37,14 +37,9 @@ _numberTypeset = set()
 for (_, v) in numberTypes.items():
     _numberTypeset.add(v)
 
-# value 转换成 char * 的转换方式： v % varName
-_stringTypes = set([
-    'std::basic_string_view<char>',
-    'std::basic_string<char>',
-])
-
-def regStringType(typeName):
-    _stringTypes.add(typeName)
+_stringParseFun = []
+def regStringType(parseFun):
+    _stringParseFun.append(parseFun)
 
 _arrayParseFun = []
 def regArrayType(parseFun):
@@ -147,7 +142,16 @@ class NativeType(object):
         self.is_pointer = False
         self.is_reference = False
 
+        self.gen_get_code = None
+        self.gen_push_code = None
+
     def _onParseCodeEndCheck(self, useTypes):
+        if self.is_pointer:
+            # void* number* 不支持
+            if self.is_void or self.is_numeric:
+                self.not_supported = True
+                return
+
         ns_full_name = self.ns_full_name
         if self.is_enum:
             assert(ns_full_name in ConvertUtils.parsedEnums, ns_full_name)
@@ -212,15 +216,16 @@ class NativeType(object):
         cntype = ntype.get_canonical()
         if cntype.kind == cindex.TypeKind.POINTER:
             nt = NativeType.from_type(cntype.get_pointee())
+            if nt.is_pointer:
+                # 不支持指针的指针
+                nt.not_supported = True
+
             nt.is_pointer = True
 
-            if nt.is_numeric:
+            if nt.is_numeric and nt.ns_full_name == 'char':
+                # char * 处理
                 nt.is_numeric = False
-                if nt.ns_full_name == 'char':
-                    nt.is_string = True
-                else:
-                    # 数值的指针只支持 char *
-                    nt.not_supported = True
+                nt.is_string = True
         elif cntype.kind == cindex.TypeKind.LVALUEREFERENCE:
             nt = NativeType.from_type(cntype.get_pointee())
             nt.is_reference = True
@@ -260,22 +265,30 @@ class NativeType(object):
             self.not_supported = True
             return
 
-        if self.ns_full_name in _stringTypes:
-            self.is_string = True
-            return
+        for parseFun in _stringParseFun:
+            isString, genGetCode, genPushCode = parseFun(self.ns_full_name)
+            if isString:
+                self.is_string = True
+                self.gen_get_code = genGetCode
+                self.gen_push_code = genPushCode
+                return
 
         for parseFun in _arrayParseFun:
-            isArray, arrayType = parseFun(self.ns_full_name)
+            isArray, arrayType, genGetCode, genPushCode = parseFun(self.ns_full_name)
             if isArray:
                 self.is_array = True
                 self.array_ele_type = arrayType
+                self.gen_get_code = genGetCode
+                self.gen_push_code = genPushCode
                 return
 
         for parseFun in _tableParseFun:
-            isTable, tableType = parseFun(self.ns_full_name)
+            isTable, tableType, genGetCode, genPushCode = parseFun(self.ns_full_name)
             if isTable:
                 self.is_table = True
                 self.table_ele_type = tableType
+                self.gen_get_code = genGetCode
+                self.gen_push_code = genPushCode
                 return
 
         # parse function
@@ -369,12 +382,56 @@ class NativeType(object):
     @property
     def cppDeclareTypeName(self):
         if self.is_pointer:
-            return self.ns_full_name + ' *'
+            if self.is_string and self.is_const:
+                assert self.ns_full_name == 'char'
+                return 'const char *'
+            else:
+                return self.ns_full_name + ' *'
         else:
             return self.ns_full_name
-        
+
     def genGetCode(self, loc, varName):
-        return 'Tolua::tolua_get_value(L, %d, %s);' % (loc, varName)
-    
+        assert (self.is_pointer or not self.is_void)
+        
+        if self.gen_get_code:
+            return self.gen_get_code(self, loc, varName)
+        elif self.is_numeric or self.is_enum:
+            return '%s = (%s)lua_tonumber(L, %d);' % (varName, self.cppDeclareTypeName, loc)
+        elif self.is_boolean:
+            return '%s = lua_toboolean(L, %d);' % (varName, loc)
+        elif self.is_string:
+            return '%s = lua_tostring(L, %d);' % (varName, loc)
+        elif self.is_function:
+            # todo...
+            return ''
+        elif self.is_class:
+            if self.is_pointer:
+                convertType = '(%s)' % self.cppDeclareTypeName
+            else:
+                convertType = '*(%s *)' % self.cppDeclareTypeName
+
+            return '%s = %sTolua::tousertype(L, "%s", %d);' % (varName, convertType, self.luaType, loc)
+
     def genPushCode(self, varName):
-        return 'Tolua::tolua_push_value(L, %s);' % varName
+        assert (self.is_pointer or not self.is_void)
+
+        if self.gen_push_code:
+            return self.gen_push_code(self, varName)
+        if self.is_numeric or self.is_enum:
+            return 'lua_pushnumber(L, (double)%s);' % (varName, )
+        elif self.is_boolean:
+            return 'lua_pushboolean(L, %s);' % (varName, )
+        elif self.is_string:
+            return 'lua_pushstring(L, %s);' % (varName, )
+        elif self.is_class:
+            if self.is_pointer:
+                return 'Tolua::pushusertype(L, (void*)%s, "%s");' % (varName, self.luaType)
+            else:
+                return 'Tolua::pushusertype(L, (void*)&%s, "%s");' % (varName, self.luaType)
+
+    @property
+    def isRefClass(self):
+        cls = ConvertUtils.parsedClasses.get(self.ns_full_name)
+        if not cls:
+            return False
+        return cls.isRefClass

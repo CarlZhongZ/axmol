@@ -15,6 +15,8 @@ parsedEnums = {}
 
 parsedStructs = {}
 
+parsedClasses = {}
+
 # 只会导出 ns_map 记录的命名空间中的类
 ns_map = (
     ("ax::experimental::ui::", "axexp."),
