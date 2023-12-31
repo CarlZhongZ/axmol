@@ -94,19 +94,6 @@ public:
     virtual int reload(const char* moduleFileName);
 
     /**
-     * Remove the related reference about the Ref object stored in the Lua table by set the value of corresponding key
-     * nil: The related Lua tables are toluafix_refid_ptr_mapping,toluafix_refid_type_mapping,tolua_value_root and
-     * object_Metatable["tolua_ubox"] or tolua_ubox. Meanwhile set the corresponding userdata nullptr and remove the all
-     * the lua function reference corresponding to this object.
-     *
-     * In current mechanism, this function is called in the destructor of Ref object, developer don't call this
-     * functions.
-     *
-     * @param object the key object to remove script object.
-     */
-    virtual void removeScriptObjectByObject(Ref* object);
-
-    /**
      * Execute script code contained in the given string.
      *
      * @param codes holding the valid script code that should be executed.

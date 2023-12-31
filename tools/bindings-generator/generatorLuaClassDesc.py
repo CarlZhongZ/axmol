@@ -237,6 +237,14 @@ class Generator(object):
                                         'parsedStructs': parsedStructs,
                                         'parsedClasses': ConvertUtils.parsedClasses,
                                     }])))
+        
+        fAutoConvertCodesH = open(os.path.join(self.outdir, "tolua_auto_convert.h"), "wt+",
+                              encoding='utf8', newline='\n')
+        fAutoConvertCodesH.write(str(Template(file='code_template/tolua_auto_convert.h.tmpl',
+                                    searchList=[self, {
+                                        'structTypes': structTypes,
+                                        'parsedStructs': parsedStructs,
+                                    }])))
 
     def _pretty_print(self, diagnostics):
         errors=[]

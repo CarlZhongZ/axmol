@@ -1,0 +1,46 @@
+\#pragma once
+
+## include headers
+\#include "scripting/lua-bindings/manual/tolua_manual_convert.h"
+#for header in $headers
+    #set relative = '..'
+    #for search_path in $search_paths
+        #set relative = os.path.relpath(header, $search_path)
+        #if not '..' in relative
+            #break
+        #end if
+    #end for
+    #if not '..' in relative
+\#include "${relative.replace(os.path.sep, '/')}"
+    #else
+\#include "${os.path.basename(header)}"
+    #end if
+#end for
+
+NS_AX_BEGIN
+
+## struct convert logic implementation
+#for structType in $structTypes
+    #set structInfo = $parsedStructs[structType]
+void tolua_push_value(lua_State* L, const ${structInfo.ns_full_name} &value) {
+    lua_newtable(L);
+    #for field in structInfo.fields
+    ${field.ntype.genPushCode('value.%s' % field.name)}
+    lua_setfield(L, -2, "${field.name}");
+    #end for
+}
+
+void tolua_get_value(lua_State* L, int loc, ${structInfo.ns_full_name} &value) {
+    if (!lua_istable(L, loc)) {
+        return;
+    }
+
+    #for field in structInfo.fields
+    lua_getfield(L, loc, "${field.name}");
+    ${field.ntype.genGetCode(-1, 'value.%s' % field.name, False)}
+    lua_pop(L, 1);
+    #end for
+}
+#end for
+
+NS_AX_END

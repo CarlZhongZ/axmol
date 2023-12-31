@@ -11,12 +11,12 @@ strNsNameSet = set([
 def strType(nsName):
     if nsName in strNsNameSet:
         def genPushCode(tp, varName):
-            return 'Tolua::push(L, %s);' % (varName, )
+            return 'tolua_push_value(L, %s);' % (varName, )
         def genGetCode(self, loc, varName, bDeclareVar):
             ret = []
             if bDeclareVar:
                 ret.append('%s %s;' % (self.cppDeclareTypeName, varName))
-            ret.append('Tolua::get(L, %d, %s);' % (loc, varName))
+            ret.append('tolua_get_value(L, %d, %s);' % (loc, varName))
             return ''.join(ret)
 
         return True, genGetCode, genPushCode

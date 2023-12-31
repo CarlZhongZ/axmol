@@ -25,6 +25,7 @@
  ****************************************************************************/
 
 #include "scripting/lua-bindings/manual/LuaEngine.h"
+#include "Tolua.h"
 
 NS_AX_BEGIN
 
@@ -44,6 +45,10 @@ LuaEngine::~LuaEngine(void)
 {
     AX_SAFE_RELEASE(_stack);
     _defaultEngine = nullptr;
+}
+
+void LuaEngine::removeScriptObjectByObject(Ref* obj) {
+    Tolua::removeScriptObjectByObject(obj);
 }
 
 bool LuaEngine::init(void)

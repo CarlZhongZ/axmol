@@ -197,11 +197,6 @@ void LuaStack::addLuaLoader(lua_CFunction func)
     lua_pop(_state, 1);
 }
 
-void LuaStack::removeScriptObjectByObject(Ref* pObj)
-{
-    Tolua::removeObjectByRefID(pObj->_luaID);
-}
-
 int LuaStack::executeString(const char* codes)
 {
     luaL_loadstring(_state, codes);

@@ -76,6 +76,8 @@ public:
         return getLuaStack()->handleAssert(msg);
     }
 
+    virtual void removeScriptObjectByObject(Ref* obj);
+
 private:
     LuaEngine(void) : _stack(nullptr) {}
     bool init(void);

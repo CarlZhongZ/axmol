@@ -17,7 +17,9 @@ set(lua_bindings_files
     manual/lua_module_register.cpp
     manual/Tolua.h
     manual/Tolua.cpp
+    manual/tolua_manual_convert.h
     auto/lua_auto_gen_codes.cpp
+    auto/tolua_auto_convert.h
     )
 
 if(APPLE)
