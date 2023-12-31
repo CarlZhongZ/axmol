@@ -381,6 +381,7 @@ class NativeType(object):
 
     @property
     def cppDeclareTypeName(self):
+        # 用于定义 lua call cpp 的参数定义
         if self.is_pointer:
             if self.is_string and self.is_const:
                 assert self.ns_full_name == 'char'
@@ -390,20 +391,41 @@ class NativeType(object):
         else:
             return self.ns_full_name
 
-    def genGetCode(self, loc, varName):
-        assert (self.is_pointer or not self.is_void)
+    @property
+    def fullCppDeclareTypeName(self):
+        # 用于完整的函数声明
+        ret = self.ns_full_name
+        if self.is_const:
+           ret = 'const ' + ret
+        if self.is_pointer:
+            ret = ret + ' *'
+        if self.is_reference:
+            ret = ret + ' &'
+        return ret
+
+    def genGetCode(self, loc, varName, bDeclareVar):
+        assert (not self.isVoid)
         
         if self.gen_get_code:
-            return self.gen_get_code(self, loc, varName)
-        elif self.is_numeric or self.is_enum:
+            return self.gen_get_code(self, loc, varName, bDeclareVar)
+
+
+        if bDeclareVar:
+            varName = '%s %s' % (self.cppDeclareTypeName, varName)
+
+        if self.is_numeric or self.is_enum:
             return '%s = (%s)lua_tonumber(L, %d);' % (varName, self.cppDeclareTypeName, loc)
         elif self.is_boolean:
             return '%s = lua_toboolean(L, %d);' % (varName, loc)
         elif self.is_string:
             return '%s = lua_tostring(L, %d);' % (varName, loc)
         elif self.is_function:
-            # todo...
-            return ''
+            return str(Template(file='code_template/lua_fun_to_std_fun.tmpl',
+                                    searchList=[{
+                                        'funcType': self,
+                                        'varName' :varName,
+                                        'loc': loc
+                                    }]))
         elif self.is_class:
             if self.is_pointer:
                 convertType = '(%s)' % self.cppDeclareTypeName
@@ -413,7 +435,7 @@ class NativeType(object):
             return '%s = %sTolua::tousertype(L, "%s", %d);' % (varName, convertType, self.luaType, loc)
 
     def genPushCode(self, varName):
-        assert (self.is_pointer or not self.is_void)
+        assert (not self.isVoid)
 
         if self.gen_push_code:
             return self.gen_push_code(self, varName)
@@ -435,3 +457,11 @@ class NativeType(object):
         if not cls:
             return False
         return cls.isRefClass
+
+    @property
+    def isVoid(self):
+        return self.is_void and not self.is_pointer
+
+    @property
+    def retCount(self):
+        return 0 if self.isVoid or self.is_function else 1

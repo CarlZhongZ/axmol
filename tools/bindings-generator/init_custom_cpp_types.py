@@ -6,16 +6,25 @@ from NativeType import regTableType
 strNsNameSet = set([
     'std::basic_string<char>',
     'std::basic_string_view<char>',
+    'ax::Data',
 ])
 def strType(nsName):
     if nsName in strNsNameSet:
         def genPushCode(tp, varName):
-            return 'lua_pushlstring(L, %s.data(), %s.length());' % (varName, varName)
-        return True, None, genPushCode
+            return 'Tolua::push(L, %s);' % (varName, )
+        def genGetCode(self, loc, varName, bDeclareVar):
+            ret = []
+            if bDeclareVar:
+                ret.append('%s %s;' % (self.cppDeclareTypeName, varName))
+            ret.append('Tolua::get(L, %d, %s);' % (loc, varName))
+            return ''.join(ret)
+
+        return True, genGetCode, genPushCode
     else:
         return False, None, None
 
 
 
 def init():
+    print('init type')
     regStringType(strType)

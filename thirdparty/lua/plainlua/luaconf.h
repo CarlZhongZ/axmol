@@ -329,7 +329,7 @@
 ** Compatibility with previous versions
 ** ===================================================================
 */
-
+#define LUA_COMPAT_5_3
 /*
 @@ LUA_COMPAT_5_3 controls other macros for compatibility with Lua 5.3.
 ** You can define it to get all options, or change specific options

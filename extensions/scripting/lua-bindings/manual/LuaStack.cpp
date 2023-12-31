@@ -126,14 +126,14 @@ LuaStack* LuaStack::attach(lua_State* L)
 
 bool LuaStack::init()
 {
-    _state = lua_open();
+    _state = luaL_newstate();
     luaL_openlibs(_state);
 
     // Register our version of the global "print" function
     lua_register(_state, "print", lua_print);
     lua_register(_state, "release_print", lua_release_print);
 
-    Tolua::registerAutoCode(_state);
+    Tolua::init(_state);
 
 #if (AX_TARGET_PLATFORM == AX_PLATFORM_IOS || AX_TARGET_PLATFORM == AX_PLATFORM_MAC)
     LuaObjcBridge::luaopen_luaoc(_state);
@@ -199,7 +199,7 @@ void LuaStack::addLuaLoader(lua_CFunction func)
 
 void LuaStack::removeScriptObjectByObject(Ref* pObj)
 {
-    Tolua::removeObjectByRefID(_state, pObj->_luaID);
+    Tolua::removeObjectByRefID(pObj->_luaID);
 }
 
 int LuaStack::executeString(const char* codes)
