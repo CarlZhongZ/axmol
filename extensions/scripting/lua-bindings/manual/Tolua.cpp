@@ -80,12 +80,35 @@ bool Tolua::executeFunction(int function, int numArgs, int numRet)
 
 bool Tolua::isusertype(lua_State* L, const char* name, int lo)
 {
-    return false;
+    if (!lua_isuserdata(L, lo))
+    {
+        return false;
+    }
+    lua_getfield(L, LUA_REGISTRYINDEX, "__TOLUA_SUPER"); // __TOLUA_SUPER
+    if (!lua_getmetatable(L, lo))
+    {
+        lua_pop(L, 1);
+        return false;
+    }
+
+    lua_getfield(L, -1, "__name"); // __TOLUA_SUPER mt __name
+    if (lua_type(L, -1) != LUA_TSTRING)
+    {
+        lua_pop(L, 3);
+        return false;
+    }
+
+    lua_rawget(L, -3); // // __TOLUA_SUPER mt bIsSuperClass
+    auto ret = lua_toboolean(L, -1);
+    lua_pop(L, 3);
+
+    return ret;
 }
 
 void* Tolua::tousertype(lua_State* L, const char* name, int lo)
 {
-    return nullptr;
+
+    return *(void**)lua_touserdata(L, lo);
 }
 
 void Tolua::pushusertype(lua_State* L, void* obj, const char* name) {
