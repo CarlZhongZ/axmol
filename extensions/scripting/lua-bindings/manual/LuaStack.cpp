@@ -183,7 +183,7 @@ void LuaStack::addLuaLoader(lua_CFunction func)
 
     // insert loader into index 2
     lua_pushcfunction(_state, func); /* L: package, loaders, func */
-    for (int i = (int)(lua_objlen(_state, -2) + 1); i > 2; --i)
+    for (int i = (int)(lua_rawlen(_state, -2) + 1); i > 2; --i)
     {
         lua_rawgeti(_state, -2, i - 1); /* L: package, loaders, func, function */
         // we call lua_rawgeti, so the loader table now is at -3
@@ -219,18 +219,6 @@ int LuaStack::executeScriptFile(const char* filename)
         }
     }
     return rn;
-}
-
-int LuaStack::executeGlobalFunction(const char* functionName)
-{
-    lua_getglobal(_state, functionName); /* query function by name, stack: function */
-    if (!lua_isfunction(_state, -1))
-    {
-        AXLOG("[LUA ERROR] name '%s' does not represent a Lua function", functionName);
-        lua_pop(_state, 1);
-        return 0;
-    }
-    return executeFunction(0);
 }
 
 void LuaStack::clean()

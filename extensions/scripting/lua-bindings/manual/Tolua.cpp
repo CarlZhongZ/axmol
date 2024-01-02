@@ -15,10 +15,20 @@ lua_State* Tolua::_state;
 std::unordered_map<uintptr_t, int> Tolua::_pushValues;
 std::unordered_map<uintptr_t, const char*> Tolua::luaType;
 
+int tolua_on_restart(lua_State* L) {
+    Tolua::on_restart();
+    return 0;
+}
 
 void Tolua::init(lua_State* L) {
     _state = L;
     registerAutoCode();
+
+    lua_register(L, "tolua_on_restart", tolua_on_restart);
+}
+
+void Tolua::on_restart() {
+    _pushValues.clear();
 }
 
 void Tolua::declare_ns(const char* name)
@@ -73,9 +83,48 @@ void Tolua::declare_end()
     lua_pop(_state, 1);
 }
 
-bool Tolua::executeFunction(int function, int numArgs, int numRet)
+static int _callFromLua = 0;
+
+int Tolua::call(lua_State* L, int numArgs, int nRet)
 {
-    return false;
+    if (nRet < 0)
+    {
+        nRet = 0;
+    }
+
+    int functionIndex = -(numArgs + 1);
+    if (!lua_isfunction(L, functionIndex))
+    {
+        AXLOG("value at stack [%d] is not function", functionIndex);
+        lua_pop(L, numArgs + 2);  // remove function and arguments
+        return 0;
+    }
+
+    int traceback = lua_isfunction(L, functionIndex - 1) ? functionIndex - 1 : 0;
+
+    int error = 0;
+    ++_callFromLua;
+    error = lua_pcall(L, numArgs, nRet, traceback); /* L: ... [G] ret */
+    --_callFromLua;
+    if (error)
+    {
+        if (traceback == 0)
+        {
+            AXLOG("[LUA ERROR] %s", lua_tostring(L, -1)); /* L: ... error */
+        }
+        lua_pop(L, 2);
+        return 0;
+    }
+
+    return nRet + 1;
+}
+
+void Tolua::push_function(lua_State* L, int function)
+{
+    lua_getglobal(L, "__G__TRACKBACK__");
+    lua_getfield(L, LUA_REGISTRYINDEX, "__TOLUA_FUNCTIONS");  // __G__TRACKBACK__ __TOLUA_FUNCTIONS
+    lua_geti(L, -1, function);                                // __G__TRACKBACK__ __TOLUA_FUNCTIONS function
+    lua_remove(L, -2);
 }
 
 bool Tolua::isusertype(lua_State* L, const char* name, int lo)
@@ -107,7 +156,10 @@ bool Tolua::isusertype(lua_State* L, const char* name, int lo)
 
 void* Tolua::tousertype(lua_State* L, const char* name, int lo)
 {
-
+    if (!isusertype(L, name, lo))
+    {
+        return nullptr;
+    }
     return *(void**)lua_touserdata(L, lo);
 }
 
@@ -192,7 +244,13 @@ void Tolua::removeScriptObjectByObject(Ref* obj)
     auto it = _pushValues.find((uintptr_t)obj);
     if (it != _pushValues.end())
     {
-        lua_getfield(_state, LUA_REGISTRYINDEX, "__TOLUA_PUSH_DATA");
+        lua_getfield(_state, LUA_REGISTRYINDEX, "__TOLUA_PUSH_DATA");  // __TOLUA_PUSH_DATA
+        lua_geti(_state, -1, it->second);  // __TOLUA_PUSH_DATA ud
+        // 移除 uservalue
+        lua_pushnil(_state);
+        lua_setuservalue(_state, -2);
+        lua_pop(_state, 1);  // __TOLUA_PUSH_DATA
+
         lua_pushnil(_state);
         lua_seti(_state, -1, it->second);
         lua_pop(_state, 1);

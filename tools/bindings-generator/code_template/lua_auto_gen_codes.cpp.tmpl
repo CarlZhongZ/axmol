@@ -27,6 +27,10 @@ NS_AX_BEGIN
     #else
         #set offset = 2
     auto self = (${cls.ns_full_name}*) Tolua::tousertype(L, "${cls.luaClassName}", 1);
+    if (!self) {
+        return 0;
+    }
+
     #end if
     #set params = []
     #for i in range(len(func.arguments))
@@ -103,6 +107,9 @@ $parseFunctionArgs(cls, m)
         #if m.ntype.retCount == 1
 static int ${cls.cppRefName}_${m.name}__get(lua_State* L) {
     auto self = (${cls.ns_full_name}*) Tolua::tousertype(L, "${cls.luaClassName}", 1);
+    if (!self) {
+        return 0;
+    }
     ${m.ntype.genPushCode('self->%s' % m.name)}
     return 1;
 }
@@ -110,6 +117,9 @@ static int ${cls.cppRefName}_${m.name}__get(lua_State* L) {
 
 static int ${cls.cppRefName}_${m.name}__set(lua_State* L) {
     auto self = (${cls.ns_full_name}*) Tolua::tousertype(L, "${cls.luaClassName}", 1);
+    if (!self) {
+        return 0;
+    }
     ${m.ntype.genGetCode(2, 'arg', True)}
     self->${m.name} = arg;
     return 0;

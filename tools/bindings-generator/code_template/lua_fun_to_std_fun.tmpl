@@ -4,12 +4,16 @@
 #end for
 int __funcID$loc = (int)lua_tonumber(L, $loc);
     $varName = [=](${', '.join(params)}) {
+        Tolua::push_function(L, __funcID$loc);
 #for i, arg in enumerate($funcType.param_types)
         ${arg.genPushCode('p%d' % i)}
 #end for
-        Tolua::executeFunction(__funcID$loc, ${len($funcType.param_types)}, $funcType.ret_type.retCount);
+        auto nPop = Tolua::call(L, ${len($funcType.param_types)}, $funcType.ret_type.retCount);
     #if $funcType.ret_type.retCount == 1
         ${funcType.ret_type.genGetCode(-1, 'ret', True)}
+        lua_pop(L, nPop);
         return ret;
+    #else
+        lua_pop(L, nPop);
     #end if
     };

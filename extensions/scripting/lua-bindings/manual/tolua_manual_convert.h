@@ -14,7 +14,10 @@ void tolua_get_value(lua_State* L, int loc, Data& value)
 {
     size_t len;
     auto s = lua_tolstring(L, loc, &len);
-    value.copy((const unsigned char*)s, len);
+    if (s)
+    {
+        value.copy((const unsigned char*)s, len);
+    }
 }
 
 void tolua_push_value(lua_State* L, const std::string& value)
@@ -26,7 +29,10 @@ void tolua_get_value(lua_State* L, int loc, std::string& value)
 {
     size_t len;
     auto s = lua_tolstring(L, loc, &len);
-    value.assign(s, len);
+    if (s)
+    {
+        value.assign(s, len);
+    }
 }
 
 void tolua_push_value(lua_State* L, const std::string_view& value)
@@ -36,7 +42,11 @@ void tolua_push_value(lua_State* L, const std::string_view& value)
 
 void tolua_get_value(lua_State* L, int loc, std::string_view& value)
 {
-    value = lua_tostring(L, loc);
+    auto s = lua_tostring(L, loc);
+    if (s)
+    {
+        value = s;
+    }
 }
 
 NS_AX_END

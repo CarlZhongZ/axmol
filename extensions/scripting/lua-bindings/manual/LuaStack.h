@@ -110,16 +110,6 @@ public:
     virtual int executeScriptFile(const char* filename);
 
     /**
-     * Execute a scripted global function.
-     * The function should not take any parameters and should return an integer.
-     *
-     * @param functionName String object holding the name of the function, in the global script environment, that is to
-     * be executed.
-     * @return The integer value returned from the script function.
-     */
-    virtual int executeGlobalFunction(const char* functionName);
-
-    /**
      * Set the stack top index 0.
      */
     virtual void clean();
