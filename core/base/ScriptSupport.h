@@ -58,8 +58,6 @@ public:
 
     virtual ~ScriptEngineProtocol() {}
 
-    virtual bool handleAssert(const char* msg) = 0;
-
     virtual void removeScriptObjectByObject(Ref* /*obj*/) {}
 };
 

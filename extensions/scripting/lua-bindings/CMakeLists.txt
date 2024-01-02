@@ -11,8 +11,6 @@ set(lua_bindings_files
     manual/LuaBridge.cpp
     manual/LuaValue.h
     manual/LuaValue.cpp
-    manual/AxluaLoader.h
-    manual/AxluaLoader.cpp
     manual/lua_module_register.h
     manual/lua_module_register.cpp
     manual/Tolua.h

@@ -72,10 +72,6 @@ public:
      */
     LuaStack* getLuaStack(void) { return _stack; }
 
-    virtual bool handleAssert(const char* msg) {
-        return getLuaStack()->handleAssert(msg);
-    }
-
     virtual void removeScriptObjectByObject(Ref* obj);
 
 private:

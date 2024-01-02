@@ -38,21 +38,7 @@ THE SOFTWARE.
 
 #ifndef AXASSERT
 #    if _AX_DEBUG > 0
-#        if AX_ENABLE_SCRIPT_BINDING
-extern bool AX_DLL cc_assert_script_compatible(const char* msg);
-#            define AXASSERT(cond, msg)                                       \
-                do                                                            \
-                {                                                             \
-                    if (!(cond))                                              \
-                    {                                                         \
-                        if (msg && *msg && !cc_assert_script_compatible(msg)) \
-                            ax::log("Assert failed: %s", msg);           \
-                        AX_ASSERT(cond);                                      \
-                    }                                                         \
-                } while (0)
-#        else
-#            define AXASSERT(cond, msg) AX_ASSERT(cond)
-#        endif
+#        define AXASSERT(cond, msg) AX_ASSERT(cond)
 #    else
 #        define AXASSERT(cond, msg)
 #    endif

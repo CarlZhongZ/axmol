@@ -1,5 +1,5 @@
 #include "Tolua.h"
-
+#include "axmol.h"
 
 
 extern "C" {
@@ -257,6 +257,26 @@ void Tolua::removeScriptObjectByObject(Ref* obj)
         _pushValues.erase(it);
 
         // todo... 通知脚本移除相关索引(native callback etc)
+    }
+}
+
+void Tolua::execute_file(const std::string& path) {
+    auto data = FileUtils::getInstance()->getDataFromFile(path);
+    execute_string((const char*)data.getBytes(), path);
+}
+
+void Tolua::execute_string(const std::string& code, const std::string& path)
+{
+    lua_pushnil(_state);
+    int r = luaL_loadbuffer(_state, code.c_str(), code.size(), path.c_str());
+    if (r)
+    {
+        AXLOG("error: %s", lua_tostring(_state, -1));
+        lua_pop(_state, 2);
+    }
+    else
+    {
+        lua_pop(_state, call(_state, 0, 0));
     }
 }
 

@@ -28,16 +28,6 @@
 
 #if AX_ENABLE_SCRIPT_BINDING
 
-bool AX_DLL cc_assert_script_compatible(const char* msg)
-{
-    ax::ScriptEngineProtocol* engine = ax::ScriptEngineManager::getInstance()->getScriptEngine();
-    if (engine && engine->handleAssert(msg))
-    {
-        return true;
-    }
-    return false;
-}
-
 NS_AX_BEGIN
 
 //

@@ -38,6 +38,9 @@ public:
     static void pushusertype(lua_State* L, void* obj, const char* name);
 
     static void removeScriptObjectByObject(Ref* obj);
+
+    static void execute_file(const std::string& path);
+    static void execute_string(const std::string& code, const std::string& path);
 };
 
 NS_AX_END

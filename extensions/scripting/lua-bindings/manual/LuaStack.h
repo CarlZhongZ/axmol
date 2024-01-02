@@ -54,13 +54,6 @@ public:
      * Create a LuaStack object, it will new a lua_State.
      */
     static LuaStack* create();
-    /**
-     * Create a LuaStack object with the existed lua_State.
-     */
-    static LuaStack* attach(lua_State* L);
-
-    /** Destructor. */
-    virtual ~LuaStack();
 
     /**
      * Method used to get a pointer to the lua_State that the script module is attached to.
@@ -69,87 +62,13 @@ public:
      */
     lua_State* getLuaState() { return _state; }
 
-    /**
-     * Add a path to find lua files in.
-     *
-     * @param path to be added to the Lua search path.
-     */
-    virtual void addSearchPath(const char* path);
-
-    /**
-     * Add lua loader.
-     *
-     * @param func a function pointer point to the loader function.
-     */
-    virtual void addLuaLoader(lua_CFunction func);
-
-    /**
-     * Reload script code corresponding to moduleFileName.
-     * If value of package["loaded"][moduleFileName] is existed, it would set the value nil.Then,it calls executeString
-     * function.
-     *
-     * @param moduleFileName String object holding the filename of the script file that is to be executed.
-     * @return 0 if the string is executed correctly or other if the string is executed wrongly.
-     */
-    virtual int reload(const char* moduleFileName);
-
-    /**
-     * Execute script code contained in the given string.
-     *
-     * @param codes holding the valid script code that should be executed.
-     * @return 0 if the string is executed correctly, other if the string is executed wrongly.
-     */
-    virtual int executeString(const char* codes);
-
-    /**
-     * Execute a script file.
-     *
-     * @param filename String object holding the filename of the script file that is to be executed.
-     * @return the return values by calling executeFunction.
-     */
-    virtual int executeScriptFile(const char* filename);
-
-    /**
-     * Set the stack top index 0.
-     */
-    virtual void clean();
-
-    /**
-     * Execute the lua function on the -(numArgs + 1) index on the stack by the numArgs variables passed.
-     *
-     * @param numArgs the number of variables.
-     * @return 0 if it happen the error or it hasn't return value, otherwise it return the value by calling the lua
-     * function.
-     */
-    virtual int executeFunction(int numArgs);
-
-    /**
-     * Handle the assert message.
-     *
-     * @return return true if current _callFromLua of LuaStack is not equal to 0 otherwise return false.
-     */
-    virtual bool handleAssert(const char* msg);
-
-    /**
-     * Loads a buffer as a Lua chunk.This function uses lua_load to load the Lua chunk in the buffer pointed to by chunk
-     * with size chunkSize. If it supports xxtea encryption algorithm, the chunk and the chunkSize would be processed by
-     * calling xxtea_decrypt to the real buffer and buffer size.
-     *
-     * @param L the current lua_State.
-     * @param chunk the buffer pointer.
-     * @param chunkSize the size of buffer.
-     * @param chunkName the name of chunk pointer.
-     * @return 0, LUA_ERRSYNTAX or LUA_ERRMEM:.
-     */
-    int luaLoadBuffer(lua_State* L, const char* chunk, int chunkSize, const char* chunkName);
 protected:
-    LuaStack() : _state(nullptr), _callFromLua(0) {}
+    LuaStack() {}
+    ~LuaStack();
 
     bool init();
-    bool initWithLuaState(lua_State* L);
 
-    lua_State* _state;
-    int _callFromLua;
+    lua_State* _state = nullptr;
 };
 
 NS_AX_END
