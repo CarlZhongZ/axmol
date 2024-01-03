@@ -386,12 +386,10 @@ class NativeType(object):
     @property
     def cppDeclareTypeName(self):
         # 用于定义 lua call cpp 的参数定义
-        if self.is_pointer > 0:
-            if self.is_string and self.is_const:
-                assert self.ns_full_name == 'char'
-                return 'const char *'
-            else:
-                return self.ns_full_name + ' *'
+        if self.is_string and self.ns_full_name == 'char':
+            return 'const char *'
+        elif self.is_class:
+            return self.ns_full_name + ' *'
         else:
             return self.ns_full_name
 
@@ -413,7 +411,7 @@ class NativeType(object):
         if self.isExtLuaType:
             ret = []
             if bDeclareVar:
-                ret.append('%s %s;' % (self.ns_full_name, varName))
+                ret.append('%s %s;' % (self.cppDeclareTypeName, varName))
             ret.append('tolua_get_value(L, %d, %s);' % (loc, varName))
             return ''.join(ret)
 
@@ -434,12 +432,7 @@ class NativeType(object):
                                         'loc': loc
                                     }]))
         elif self.is_class:
-            if self.is_pointer > 0:
-                convertType = '(%s)' % self.cppDeclareTypeName
-            else:
-                convertType = '*(%s *)' % self.cppDeclareTypeName
-
-            return '%s = %sTolua::toType(L, "%s", %d);' % (varName, convertType, self.luaType, loc)
+            return '%s = (%s)Tolua::toType(L, "%s", %d);' % (varName, self.cppDeclareTypeName, self.luaType, loc)
 
     def genPushCode(self, varName):
         assert (not self.isVoid)
