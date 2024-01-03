@@ -37,9 +37,13 @@ _numberTypeset = set()
 for (_, v) in numberTypes.items():
     _numberTypeset.add(v)
 
-_stringParseFun = []
-def regStringType(parseFun):
-    _stringParseFun.append(parseFun)
+_strNsNameSet = set([
+    'std::basic_string<char>',
+    'std::basic_string_view<char>',
+])
+def regStringType(types):
+    for tp in types:
+        _strNsNameSet.add(tp)
 
 _arrayParseFun = []
 def regArrayType(parseFun):
@@ -114,10 +118,15 @@ class NativeType(object):
     def __init__(self):
         allCreatedTypes.append(self)
 
+        # 是否为定义方法的返回值
+        self.is_ret_type = False
+
         self.not_supported = False
 
         self.is_class = False
-        self.is_native_gc_obj = True
+
+        # c struct 对应 lua 的 table
+        self.is_struct = False
 
         self.is_void = False
         self.is_boolean = False
@@ -142,20 +151,7 @@ class NativeType(object):
         self.is_pointer = 0
         self.is_reference = 0
 
-        self.gen_get_code = None
-        self.gen_push_code = None
-
     def _onParseCodeEndCheck(self, useTypes):
-        if self.is_pointer > 0:
-            # void* number* 不支持
-            if self.is_void or self.is_numeric:
-                self.not_supported = True
-                return
-
-            # 指针的指针不支持
-            self.not_supported = self.is_pointer >= 2 or self.is_reference >= 2
-
-
         ns_full_name = self.ns_full_name
         if self.is_enum:
             assert(ns_full_name in ConvertUtils.parsedEnums, ns_full_name)
@@ -164,12 +160,20 @@ class NativeType(object):
                 # 由字符串创建的 type 不能判定是否为 枚举类型
                 self.is_class = False
                 self.is_enum = True
+            elif ns_full_name in ConvertUtils.parsedStructs:
+                self.is_class = False
+                self.is_struct = True
+                if ConvertUtils.parsedStructs[self.ns_full_name].isNotSupported:
+                    self.not_supported = True
+                    return
 
-        if self.is_enum or self.is_class:
+        # 指针的指针不支持
+        if self.is_pointer >= 2 or self.is_reference >= 2:
+            self.not_supported = True
+            return
+
+        if self.is_enum or self.is_class or self.is_struct:
             if self.ns_full_name not in useTypes:
-                self.not_supported = True
-            elif self.ns_full_name in ConvertUtils.parsedStructs and ConvertUtils.parsedStructs[self.ns_full_name].isNotSupported:
-                # struct 是根据节点信息 parse 来的是全的
                 self.not_supported = True
 
     @staticmethod
@@ -274,30 +278,21 @@ class NativeType(object):
             self.not_supported = True
             return
 
-        for parseFun in _stringParseFun:
-            isString, genGetCode, genPushCode = parseFun(self.ns_full_name)
-            if isString:
-                self.is_string = True
-                self.gen_get_code = genGetCode
-                self.gen_push_code = genPushCode
-                return
+        if self.ns_full_name in _strNsNameSet:
+            self.is_string = True
 
         for parseFun in _arrayParseFun:
-            isArray, arrayType, genGetCode, genPushCode = parseFun(self.ns_full_name)
+            isArray, arrayType = parseFun(self.ns_full_name)
             if isArray:
                 self.is_array = True
                 self.array_ele_type = arrayType
-                self.gen_get_code = genGetCode
-                self.gen_push_code = genPushCode
                 return
 
         for parseFun in _tableParseFun:
-            isTable, tableType, genGetCode, genPushCode = parseFun(self.ns_full_name)
+            isTable, tableType = parseFun(self.ns_full_name)
             if isTable:
                 self.is_table = True
                 self.table_ele_type = tableType
-                self.gen_get_code = genGetCode
-                self.gen_push_code = genPushCode
                 return
 
         # parse function
@@ -414,10 +409,13 @@ class NativeType(object):
 
     def genGetCode(self, loc, varName, bDeclareVar):
         assert (not self.isVoid)
-        
-        if self.gen_get_code:
-            return self.gen_get_code(self, loc, varName, bDeclareVar)
 
+        if self.isExtLuaType:
+            ret = []
+            if bDeclareVar:
+                ret.append('%s %s;' % (self.ns_full_name, varName))
+            ret.append('tolua_get_value(L, %d, %s);' % (loc, varName))
+            return ''.join(ret)
 
         if bDeclareVar:
             varName = '%s %s' % (self.cppDeclareTypeName, varName)
@@ -446,8 +444,14 @@ class NativeType(object):
     def genPushCode(self, varName):
         assert (not self.isVoid)
 
-        if self.gen_push_code:
-            return self.gen_push_code(self, varName)
+        if self.isExtLuaType:
+            if self.is_ret_type:
+                if self.is_pointer == 0:
+                    return 'tolua_push_value(L, %s);' % (varName, )
+                else:
+                    return 'tolua_push_value(L, *%s);' % (varName, )
+            else:
+                return 'tolua_push_value(L, %s);' % (varName, )
         if self.is_numeric or self.is_enum:
             return 'lua_pushnumber(L, (double)%s);' % (varName, )
         elif self.is_boolean:
@@ -477,3 +481,11 @@ class NativeType(object):
     @property
     def retCount(self):
         return 0 if self.isVoid or self.is_function else 1
+
+    @property
+    def isExtLuaType(self):
+        # 基础扩展类型指针当参数在处理完结果后需要将处理完毕的结果返回
+        return self.is_string and self.ns_full_name != 'char' or \
+                                        self.is_table or \
+                                        self.is_array or \
+                                        self.is_struct
