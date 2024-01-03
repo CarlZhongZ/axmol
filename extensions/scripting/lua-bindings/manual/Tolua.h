@@ -1,6 +1,5 @@
 #pragma once
 #include "base/Types.h"
-#include "base/Ref.h"
 
 extern "C" {
 #include "lua.h"
@@ -28,18 +27,20 @@ public:
     static void init();
     static void destroy();
 
-    static void removeScriptObjectByObject(Ref* obj);
+    static lua_State* getLuaState() { return _state; }
+    static void removeRefObject(void* obj);
 
     static void execute_file(const std::string& path);
     static void execute_string(const std::string& code, const std::string& path);
 
     // call stack: __trackback fun args...
     static int call(lua_State* L, int numArgs, int nRet);
-    static void push_function(lua_State* L, int function);
+    static void pushFunction(lua_State* L, int function);
 
-    static bool isusertype(lua_State* L, const char* name, int lo);
-    static void* tousertype(lua_State* L, const char* name, int lo);
-    static void pushusertype(lua_State* L, void* obj, const char* name);
+    static bool isType(lua_State* L, const char* name, int lo);
+    static void* toType(lua_State* L, const char* name, int lo);
+    static void pushType(lua_State* L, void* obj, const char* name);
+    static void pushRefType(lua_State* L, void* obj);
 };
 
 NS_AX_END

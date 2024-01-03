@@ -47,7 +47,7 @@ LuaEngine::~LuaEngine(void)
 }
 
 void LuaEngine::removeScriptObjectByObject(Ref* obj) {
-    Tolua::removeScriptObjectByObject(obj);
+    Tolua::removeRefObject(obj);
 }
 
 bool LuaEngine::init(void)

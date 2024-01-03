@@ -139,18 +139,22 @@ class NativeType(object):
         self.ns_full_name = ''
 
         self.is_const = False
-        self.is_pointer = False
-        self.is_reference = False
+        self.is_pointer = 0
+        self.is_reference = 0
 
         self.gen_get_code = None
         self.gen_push_code = None
 
     def _onParseCodeEndCheck(self, useTypes):
-        if self.is_pointer:
+        if self.is_pointer > 0:
             # void* number* 不支持
             if self.is_void or self.is_numeric:
                 self.not_supported = True
                 return
+
+            # 指针的指针不支持
+            self.not_supported = self.is_pointer >= 2 or self.is_reference >= 2
+
 
         ns_full_name = self.ns_full_name
         if self.is_enum:
@@ -216,11 +220,11 @@ class NativeType(object):
         cntype = ntype.get_canonical()
         if cntype.kind == cindex.TypeKind.POINTER:
             nt = NativeType.from_type(cntype.get_pointee())
-            if nt.is_pointer:
+            if nt.is_pointer > 0:
                 # 不支持指针的指针
                 nt.not_supported = True
 
-            nt.is_pointer = True
+            nt.is_pointer += 1
 
             if nt.is_numeric and nt.ns_full_name == 'char':
                 # char * 处理
@@ -228,7 +232,7 @@ class NativeType(object):
                 nt.is_string = True
         elif cntype.kind == cindex.TypeKind.LVALUEREFERENCE:
             nt = NativeType.from_type(cntype.get_pointee())
-            nt.is_reference = True
+            nt.is_reference += 1
         else:
             nt = NativeType()
             nt._initWithType(ntype)
@@ -240,18 +244,23 @@ class NativeType(object):
             self.is_const = True
             typename = typename[6:]
 
+        for i in range(len(typename)):
+            ch = typename[i:i+1]
+            if ch == '&':
+                self.is_reference += 1
+            elif ch == '*':
+                self.is_pointer += 1
+
         if typename[-2:] == ' &':
-            self.is_reference = True
             typename = typename[:-2]
         if typename[-2:] == ' *':
-            self.is_pointer = True
             typename = typename[:-2]
 
         self.ns_full_name = typename
 
         if typename in _numberTypeset:
             self.is_numeric = True
-        elif typename == 'char' and self.is_pointer:
+        elif typename == 'char' and self.is_pointer == 1:
             self.is_string = True
         elif typename == 'void':
             self.is_void = True
@@ -382,7 +391,7 @@ class NativeType(object):
     @property
     def cppDeclareTypeName(self):
         # 用于定义 lua call cpp 的参数定义
-        if self.is_pointer:
+        if self.is_pointer > 0:
             if self.is_string and self.is_const:
                 assert self.ns_full_name == 'char'
                 return 'const char *'
@@ -397,9 +406,9 @@ class NativeType(object):
         ret = self.ns_full_name
         if self.is_const:
            ret = 'const ' + ret
-        if self.is_pointer:
+        if self.is_pointer > 0:
             ret = ret + ' *'
-        if self.is_reference:
+        if self.is_reference > 0:
             ret = ret + ' &'
         return ret
 
@@ -427,12 +436,12 @@ class NativeType(object):
                                         'loc': loc
                                     }]))
         elif self.is_class:
-            if self.is_pointer:
+            if self.is_pointer > 0:
                 convertType = '(%s)' % self.cppDeclareTypeName
             else:
                 convertType = '*(%s *)' % self.cppDeclareTypeName
 
-            return '%s = %sTolua::tousertype(L, "%s", %d);' % (varName, convertType, self.luaType, loc)
+            return '%s = %sTolua::toType(L, "%s", %d);' % (varName, convertType, self.luaType, loc)
 
     def genPushCode(self, varName):
         assert (not self.isVoid)
@@ -446,10 +455,13 @@ class NativeType(object):
         elif self.is_string:
             return 'lua_pushstring(L, %s);' % (varName, )
         elif self.is_class:
-            if self.is_pointer:
-                return 'Tolua::pushusertype(L, (void*)%s, "%s");' % (varName, self.luaType)
+            if self.is_pointer > 0:
+                if self.isRefClass:
+                    return 'Tolua::pushRefType(L, (void*)%s);' % (varName, )
+                else:
+                    return 'Tolua::pushType(L, (void*)new %s(*%s), "%s");' % (self.ns_full_name, varName, self.luaType)
             else:
-                return 'Tolua::pushusertype(L, (void*)&%s, "%s");' % (varName, self.luaType)
+                return 'Tolua::pushType(L, (void*)new %s(%s), "%s");' % (self.ns_full_name, varName, self.luaType)
 
     @property
     def isRefClass(self):
@@ -460,7 +472,7 @@ class NativeType(object):
 
     @property
     def isVoid(self):
-        return self.is_void and not self.is_pointer
+        return self.is_void and self.is_pointer == 0
 
     @property
     def retCount(self):

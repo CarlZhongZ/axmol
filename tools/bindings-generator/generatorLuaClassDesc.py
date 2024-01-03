@@ -11,6 +11,7 @@ import re
 import os
 import inspect
 import traceback
+import json
 from Cheetah.Template import Template
 
 from configparser import ConfigParser
@@ -26,26 +27,37 @@ import init_custom_cpp_types
 init_custom_cpp_types.init()
 
 class Generator(object):
-    def __init__(self, opts):
+    def __init__(self, config, sec, outdir):
         ConvertUtils.generator = self
 
         self.index = cindex.Index.create()
-        self.outdir = opts['outdir']
-        print('search_paths=' + opts['search_paths'])
-        self.search_paths = opts['search_paths'].split(';')
-        self.headers = opts['headers'].split(' ')
-        self.classes = opts['classes']
-        self.classes_have_no_parents = opts['classes_have_no_parents'].split(' ')
-        self.base_classes_to_skip = opts['base_classes_to_skip'].split(' ')
-        self.abstract_classes = opts['abstract_classes'].split(' ')
-        self.clang_args = opts['clang_args']
-        self.skip_classes = {}
-        self.rename_functions = {}
-        self.rename_classes = {}
-        self.win32_clang_flags = opts['win32_clang_flags']
+        self.outdir = outdir
+        with open('code_template/parse_config.json', 'r') as f:
+            self.parseConfig = json.loads(f.read())
 
+        self.search_paths = [
+            os.path.join(config.get('DEFAULT', 'axdir'), 'core'),
+            os.path.join(config.get('DEFAULT', 'axdir'), 'extensions'),
+        ]
+        self.headers = config.get(sec, 'headers').split(' ')
+        self.classes = {}
+        classes = re.split(',\n?', config.get(sec, 'classes'))
+        for s in classes:
+            lists = s.split('[')
+            if len(lists) == 2:
+                self.classes[lists[0]] = lists[1][:-1].split(' ')
+
+        self.non_ref_classes = set()
+        non_ref_classes = re.split(',\n?', config.get(sec, 'non_ref_classes'))
+        for s in non_ref_classes:
+            lists = s.split('[')
+            if len(lists) == 2:
+                ns = lists[0]
+                for className in lists[1][:-1].split(' '):
+                    self.non_ref_classes.add(ns + className)
+
+        self.clang_args = (config.get(sec, 'clang_args') or "").split(" ")
         extend_clang_args = []
-
         for clang_arg in self.clang_args:
             if not os.path.exists(clang_arg.replace("-I","")):
                 pos = clang_arg.find("lib/clang/3.3/include")
@@ -57,91 +69,36 @@ class Generator(object):
         if len(extend_clang_args) > 0:
             self.clang_args.extend(extend_clang_args)
 
-        if sys.platform == 'win32' and self.win32_clang_flags != None:
-            self.clang_args.extend(self.win32_clang_flags)
+        # self.win32_clang_flags = (config.get(sec, 'win32_clang_flags') or "").split(" ") if config.has_option(sec, 'win32_clang_flags') else None,
+        # if sys.platform == 'win32' and self.win32_clang_flags != None:
+        #     self.clang_args.extend(self.win32_clang_flags)
 
-        if opts['skip']:
-            list_of_skips = re.split(",\n?", opts['skip'])
-            for skip in list_of_skips:
-                class_name, methods = skip.split("::")
-                self.skip_classes[class_name] = []
-                match = re.match("\\[([^]]+)\\]", methods)
-                if match:
-                    self.skip_classes[class_name] = match.group(1).split(" ")
-                else:
-                    raise Exception("invalid list of skip methods")
-        if opts['rename_functions']:
-            list_of_function_renames = re.split(",\n?", opts['rename_functions'])
-            for rename in list_of_function_renames:
-                class_name, methods = rename.split("::")
-                self.rename_functions[class_name] = {}
-                match = re.match("\\[([^]]+)\\]", methods)
-                if match:
-                    list_of_methods = match.group(1).split(" ")
-                    for pair in list_of_methods:
-                        k, v = pair.split("=")
-                        self.rename_functions[class_name][k] = v
-                else:
-                    raise Exception("invalid list of rename methods")
-
-        if opts['rename_classes']:
-            list_of_class_renames = re.split(",\n?", opts['rename_classes'])
-            for rename in list_of_class_renames:
-                class_name, renamed_class_name = rename.split("::")
-                self.rename_classes[class_name] = renamed_class_name
 
     def should_rename_function(self, class_name, method_name):
-        if (class_name in self.rename_functions) and (method_name in self.rename_functions[class_name]):
-            return self.rename_functions[class_name][method_name]
+        # 方法名不能为 lua 关键字
+        if method_name == 'end':
+            return 'endToLua'
         return None
 
-    def get_class_or_rename_class(self, class_name):
+    def in_listed_classes(self, nsName):
+        if nsName in self.non_ref_classes:
+            return True
 
-        if class_name in self.rename_classes:
-            return self.rename_classes[class_name]
-        return class_name
-
-    def should_skip(self, class_name, method_name, verbose=False):
-        if class_name == "*" and "*" in self.skip_classes:
-            for func in self.skip_classes["*"]:
-                if re.match(func, method_name):
+        for ns, names in self.classes.items():
+            if not nsName.startswith(ns):
+                continue
+            className = nsName.replace(ns, '')
+            for name in names:
+                md = re.match("^" + name + "$", className)
+                if md:
                     return True
-        else:
-            for key in self.skip_classes.keys():
-                if key == "*" or re.match("^" + key + "$", class_name):
-                    if verbose:
-                        print("%s in skip_classes" % (class_name))
-                    if len(self.skip_classes[key]) == 1 and self.skip_classes[key][0] == "*":
-                        if verbose:
-                            print("%s will be skipped completely" % (class_name))
-                        return True
-                    if method_name != None:
-                        for func in self.skip_classes[key]:
-                            if re.match(func, method_name):
-                                if verbose:
-                                    print("%s will skip method %s" % (class_name, method_name))
-                                return True
-        if verbose:
-            print("%s will be accepted (%s, %s)" % (class_name, key, self.skip_classes[key]))
-        return False
 
-    def in_listed_classes(self, class_name):
-        """
-        returns True if the class is in the list of required classes and it's not in the skip list
-        """
-        for key in self.classes:
-            md = re.match("^" + key + "$", class_name)
-            if md and not self.should_skip(class_name, None):
-                return True
         return False
 
     def sorted_classes(self):
-        '''
-        sorted classes in order of inheritance
-        '''
         sorted_list = []
-        for class_name in ConvertUtils.parsedClasses.keys():
-            nclass = ConvertUtils.parsedClasses[class_name]
+        for nsName in sorted(ConvertUtils.parsedClasses.keys()):
+            nclass = ConvertUtils.parsedClasses[nsName]
             sorted_list += self._sorted_parents(nclass)
         # remove dupes from the list
         no_dupes = []
@@ -149,15 +106,10 @@ class Generator(object):
         return no_dupes
 
     def _sorted_parents(self, nclass):
-        '''
-        returns the sorted list of parents for a native class
-        '''
         sorted_parents = []
         for p in nclass.parents:
-            if p.class_name in ConvertUtils.parsedClasses.keys():
-                sorted_parents += self._sorted_parents(p)
-        if nclass.class_name in ConvertUtils.parsedClasses.keys():
-            sorted_parents.append(nclass.class_name)
+            sorted_parents += self._sorted_parents(p)
+        sorted_parents.append(nclass.ns_full_name)
         return sorted_parents
 
     def generate_code(self):
@@ -165,10 +117,11 @@ class Generator(object):
 
         parsedEnums = ConvertUtils.parsedEnums
         parsedStructs = ConvertUtils.parsedStructs
+        parsedClasses = ConvertUtils.parsedClasses
 
         useTypes = set()
         realUseTypes = set()
-        for (_, nativeClass) in ConvertUtils.parsedClasses.items():
+        for (_, nativeClass) in parsedClasses.items():
             nativeClass.testUseTypes(useTypes)
             realUseTypes.add(nativeClass.ns_full_name)
 
@@ -216,7 +169,7 @@ class Generator(object):
                                         'structTypes': structTypes,
                                         'parsedStructs': parsedStructs,
                                         'classTypes': classTypes,
-                                        'parsedClasses': ConvertUtils.parsedClasses,
+                                        'parsedClasses': parsedClasses,
                                     }])))
 
         fEnum = open(os.path.join(self.outdir, "engine_enums.lua"), "wt+", encoding='utf8', newline='\n')
@@ -235,7 +188,7 @@ class Generator(object):
                                         'structTypes': structTypes,
                                         'classTypes': classTypes,
                                         'parsedStructs': parsedStructs,
-                                        'parsedClasses': ConvertUtils.parsedClasses,
+                                        'parsedClasses': parsedClasses,
                                     }])))
         
         fAutoConvertCodesH = open(os.path.join(self.outdir, "tolua_auto_convert.h"), "wt+",
@@ -245,6 +198,12 @@ class Generator(object):
                                         'structTypes': structTypes,
                                         'parsedStructs': parsedStructs,
                                     }])))
+
+        fClassInfo = open(os.path.join("classes.txt"), "wt+", encoding='utf8', newline='\n')
+        for _, cls in parsedClasses.items():
+            base = cls.parents[0].ns_full_name if cls.parents else 'None'
+            fClassInfo.write(f'class:{cls.ns_full_name} base:{base} isRefClass:{cls.isRefClass}\n')
+
 
     def _pretty_print(self, diagnostics):
         errors=[]
@@ -276,33 +235,25 @@ class Generator(object):
             self._deep_iterate(tu.cursor)
 
     def _deep_iterate(self, cursor, depth=0):
-        def get_children_array_from_iter(iter):
-            children = []
-            for child in iter:
-                children.append(child)
-            return children
-
         # get the canonical type
         if cursor.kind == cindex.CursorKind.CLASS_DECL:
-            if cursor == cursor.type.get_declaration() and len(get_children_array_from_iter(cursor.get_children())) > 0:
-                if ConvertUtils.isTargetedNamespace(cursor) and self.in_listed_classes(cursor.displayname):
-                    if not (cursor.displayname in ConvertUtils.parsedClasses):
-                        nclass = NativeClass(cursor, self)
-                        ConvertUtils.parsedClasses[cursor.displayname] = nclass
+            if ConvertUtils.isValidDefinition(cursor):
+                nsName = ConvertUtils.get_namespaced_name(cursor)
+                if self.in_listed_classes(nsName) and nsName not in ConvertUtils.parsedClasses:
+                    ConvertUtils.parsedClasses[nsName] = NativeClass(cursor, self)
+            return
         elif cursor.kind == cindex.CursorKind.STRUCT_DECL:
-            if cursor == cursor.type.get_declaration() and len(get_children_array_from_iter(cursor.get_children())) > 0:
-                if ConvertUtils.isTargetedNamespace(cursor):
-                    nsName = ConvertUtils.get_namespaced_name(cursor)
-                    if nsName not in ConvertUtils.parsedStructs:
-                        enum = NativeStruct(cursor)
-                        ConvertUtils.parsedStructs[nsName] = enum
+            if ConvertUtils.isValidDefinition(cursor):
+                nsName = ConvertUtils.get_namespaced_name(cursor)
+                if nsName not in ConvertUtils.parsedStructs:
+                    ConvertUtils.parsedStructs[nsName] = NativeStruct(cursor)
+            return
         elif cursor.kind == cindex.CursorKind.ENUM_DECL:
-            if cursor == cursor.type.get_declaration() and len(get_children_array_from_iter(cursor.get_children())) > 0:
-                if ConvertUtils.isTargetedNamespace(cursor):
-                    nsName = ConvertUtils.get_namespaced_name(cursor)
-                    if nsName not in ConvertUtils.parsedEnums:
-                        enum = NativeEnum(cursor)
-                        ConvertUtils.parsedEnums[nsName] = enum
+            if ConvertUtils.isValidDefinition(cursor):
+                nsName = ConvertUtils.get_namespaced_name(cursor)
+                if nsName not in ConvertUtils.parsedEnums:
+                    ConvertUtils.parsedEnums[nsName] = NativeEnum(cursor)
+            return
 
         for node in cursor.get_children():
             # print("%s %s - %s" % (">" * depth, node.displayname, node.kind))
@@ -355,22 +306,7 @@ def main():
     print( "\n.... Generating bindings")
     for s in sections:
         print( "\n.... .... Processing section", s, "\n")
-        gen_opts = {
-            'headers': config.get(s, 'headers'),
-            'classes': config.get(s, 'classes').split(' '),
-            'clang_args': (config.get(s, 'clang_args') or "").split(" "),
-            'classes_have_no_parents': config.get(s, 'classes_have_no_parents'),
-            'base_classes_to_skip': config.get(s, 'base_classes_to_skip'),
-            'abstract_classes': config.get(s, 'abstract_classes'),
-            'skip': config.get(s, 'skip'),
-            'rename_functions': config.get(s, 'rename_functions'),
-            'rename_classes': config.get(s, 'rename_classes'),
-            'win32_clang_flags': (config.get(s, 'win32_clang_flags') or "").split(" ") if config.has_option(s, 'win32_clang_flags') else None,
-
-            'outdir': outdir,
-            'search_paths': os.path.abspath(os.path.join(config.get('DEFAULT', 'axdir'), 'core')) + ";" + os.path.abspath(os.path.join(config.get('DEFAULT', 'axdir'), 'extensions')),
-            }
-        generator = Generator(gen_opts)
+        generator = Generator(config, s, outdir)
         generator.generate_code()
 
 if __name__ == '__main__':

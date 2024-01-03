@@ -155,7 +155,10 @@ int Tolua::call(lua_State* L, int numArgs, int nRet)
         return 0;
     }
 
-    int traceback = lua_isfunction(L, functionIndex - 1) ? functionIndex - 1 : 0;
+    int traceback = functionIndex - 1;
+    if (!lua_isfunction(L, traceback)) {
+        traceback = 0;
+    }
 
     int error = 0;
     ++_callFromLua;
@@ -174,22 +177,22 @@ int Tolua::call(lua_State* L, int numArgs, int nRet)
     return nRet + 1;
 }
 
-void Tolua::push_function(lua_State* L, int function)
+void Tolua::pushFunction(lua_State* L, int function)
 {
     lua_getglobal(L, "__G__TRACKBACK__");
-    lua_getfield(L, LUA_REGISTRYINDEX, "__TOLUA_FUNCTIONS");  // __G__TRACKBACK__ __TOLUA_FUNCTIONS
-    lua_geti(L, -1, function);                                // __G__TRACKBACK__ __TOLUA_FUNCTIONS function
+    lua_getfield(L, LUA_REGISTRYINDEX, "__TOLUA_FUNCTIONS");
+    lua_geti(L, -1, function);
     lua_remove(L, -2);
 }
 
-bool Tolua::isusertype(lua_State* L, const char* name, int lo)
+bool Tolua::isType(lua_State* L, const char* name, int lo)
 {
     if (!lua_isuserdata(L, lo))
     {
         return false;
     }
-    lua_getfield(L, LUA_REGISTRYINDEX, "__TOLUA_SUPER"); // __TOLUA_SUPER
-    if (!lua_getmetatable(L, lo))
+    lua_getfield(L, LUA_REGISTRYINDEX, "__TOLUA_SUPER");  // __TOLUA_SUPER
+    if (!lua_getmetatable(L, lo))    // __TOLUA_SUPER mt
     {
         lua_pop(L, 1);
         return false;
@@ -209,110 +212,122 @@ bool Tolua::isusertype(lua_State* L, const char* name, int lo)
     return ret;
 }
 
-void* Tolua::tousertype(lua_State* L, const char* name, int lo)
+void* Tolua::toType(lua_State* L, const char* name, int lo)
 {
-    if (!isusertype(L, name, lo))
+    if (!isType(L, name, lo))
     {
         return nullptr;
     }
     return *(void**)lua_touserdata(L, lo);
 }
 
-void Tolua::pushusertype(lua_State* L, void* obj, const char* name) {
+void Tolua::pushType(lua_State* L, void* obj, const char* name)
+{
+    if (!obj)
+    {
+        lua_pushnil(L);
+        return;
+    }
+
+    lua_getfield(L, LUA_REGISTRYINDEX, name);  // mt
+    if (!lua_istable(L, -1))
+    {
+        // 未注册类型
+        return;
+    }
+    *(void**)lua_newuserdata(L, sizeof(void*)) = obj;  // mt ud
+    lua_insert(L, -2);  // ud mt
+    lua_setmetatable(L, -2);  // ud
+}
+
+void Tolua::pushRefType(lua_State* L, void* obj)
+{
+    if (!obj)
+    {
+        lua_pushnil(L);
+        return;
+    }
+
+    auto itType = luaType.find((uintptr_t) typeid(obj).name());
+    if (itType == luaType.end())
+    {
+        lua_pushnil(L);
+        return;
+    }
+    const char* name = itType->second;
+
     auto hashKey = (uintptr_t)obj;
     auto it = _pushValues.find(hashKey);
     if (it == _pushValues.end())
     {
-        auto typeName = typeid(obj).name();
-        lua_getfield(L, LUA_REGISTRYINDEX, typeName);  // mt
-        if (lua_istable(L, -1))
-        {
-            // 首次 push
-            *(void**)lua_newuserdata(L, sizeof(void*)) = obj; // mt ud
-            lua_insert(L, -2); // ud mt
-            lua_setmetatable(L, -2); // ud
-            static int idx = 1;
-            if (idx == 2000000000)
-            {
-                // reorder __TOLUA_PUSH_DATA
-                auto size = _pushValues.size();
-                std::unordered_set<int> oldIdxs;
-                for (auto it = _pushValues.begin(); it != _pushValues.end(); ++it)
-                {
-                    oldIdxs.insert(it->second);
-                }
-                lua_getfield(L, LUA_REGISTRYINDEX, "__TOLUA_PUSH_DATA");
-                int i = 1;
-                for (auto it = _pushValues.begin(); it != _pushValues.end(); ++it)
-                {
-                    int oldIdx = it->second;
-                    if (oldIdx > size)
-                    {
-                        while (oldIdxs.contains(i))
-                        {
-                            ++i;
-                        }
-                        lua_geti(L, -1, oldIdx);
-                        lua_pushnil(L);
-                        lua_seti(L, -3, oldIdx);
-                        lua_seti(L, -2, i);
-                        _pushValues[it->first] = i;
-                    }
-                }
-                lua_pop(L, 1);
-                idx = i + 1;
-            }
-            _pushValues[hashKey] = idx;
-            lua_getfield(L, LUA_REGISTRYINDEX, "__TOLUA_PUSH_DATA"); // ud __TOLUA_PUSH_DATA
-            lua_pushvalue(L, -2); // ud __TOLUA_PUSH_DATA ud
-            lua_seti(L, -2, idx); // ud __TOLUA_PUSH_DATA
-            lua_pop(L, 1);
-
-            ++idx;
-        }
-        else
+        lua_getfield(L, LUA_REGISTRYINDEX, name);  // mt
+        if (!lua_istable(L, -1))
         {
             // 未注册类型
-            lua_pop(L, 1);
-            lua_pushnil(L);
+            return;
         }
+
+        // 首次 push
+        *(void**)lua_newuserdata(L, sizeof(void*)) = obj;  // mt ud
+        lua_insert(L, -2);                                 // ud mt
+        lua_setmetatable(L, -2);                           // ud
+        static int idx = 0;
+        lua_getfield(L, LUA_REGISTRYINDEX, "__TOLUA_PUSH_DATA");  // ud __TOLUA_PUSH_DATA
+        while (true)
+        {
+            // 找到一个空位放 userdata
+            ++idx;
+            if (idx > 2000000000)
+                idx = 1;
+            lua_geti(L, -1, idx);
+            if (lua_isnil(L, -1))
+            {
+                lua_pop(L, 1);
+                break;
+            }
+            else
+            {
+                lua_pop(L, 1);
+            }
+        }
+        _pushValues[hashKey] = idx;
+        lua_pushvalue(L, -2);                                     // ud __TOLUA_PUSH_DATA ud
+        lua_seti(L, -2, idx);                                     // ud __TOLUA_PUSH_DATA
+        lua_pop(L, 1);
     }
     else
     {
-        auto idx = it->second;
+        // push cached
         lua_getfield(L, LUA_REGISTRYINDEX, "__TOLUA_PUSH_DATA");
-        lua_geti(L, -1, idx);
-        if (!lua_isuserdata(L, -1))
-        {
-            // 被 gc 了重新 push
-            _pushValues.erase(it);
-            lua_pop(L, 2);
-            return pushusertype(L, obj, name);
-        }
-        lua_insert(L, -2);
-        lua_pop(L, 1);
+        lua_geti(L, -1, it->second);
+        lua_remove(L, -2);
     }
 }
 
-void Tolua::removeScriptObjectByObject(Ref* obj)
+void Tolua::removeRefObject(void* obj)
 {
     auto it = _pushValues.find((uintptr_t)obj);
-    if (it != _pushValues.end())
+    if (it == _pushValues.end())
     {
-        lua_getfield(_state, LUA_REGISTRYINDEX, "__TOLUA_PUSH_DATA");  // __TOLUA_PUSH_DATA
-        lua_geti(_state, -1, it->second);  // __TOLUA_PUSH_DATA ud
-        // 移除 uservalue
-        lua_pushnil(_state);
-        lua_setuservalue(_state, -2);
-        lua_pop(_state, 1);  // __TOLUA_PUSH_DATA
-
-        lua_pushnil(_state);
-        lua_seti(_state, -1, it->second);
-        lua_pop(_state, 1);
-        _pushValues.erase(it);
-
-        // todo... 通知脚本移除相关索引(native callback etc)
+        return;
     }
+
+    lua_getfield(_state, LUA_REGISTRYINDEX, "__TOLUA_PUSH_DATA");  // __TOLUA_PUSH_DATA
+    lua_geti(_state, -1, it->second);                              // __TOLUA_PUSH_DATA ud
+
+    // 移除 uservalue
+    lua_pushnil(_state);
+    lua_setuservalue(_state, -2);
+    lua_pop(_state, 1);  // __TOLUA_PUSH_DATA
+
+    // 从 __TOLUA_PUSH_DATA 移除
+    lua_pushnil(_state);
+    lua_seti(_state, -1, it->second);
+    _pushValues.erase(it);
+
+    lua_pop(_state, 1);
+
+    // ? todo... 通知脚本移除相关索引(native callback etc)
 }
 
 void Tolua::execute_file(const std::string& path) {

@@ -209,3 +209,15 @@ def iterate_param_node(param_node, depth=1):
             return True
 
     return False
+
+def isValidDefinition(cursor):
+    if cursor != cursor.type.get_declaration():
+        return False
+    
+    if not isTargetedNamespace(cursor):
+        return False
+
+    iter = cursor.get_children()
+    for child in iter:
+        return True
+    return False

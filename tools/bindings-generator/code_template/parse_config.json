@@ -1,0 +1,7 @@
+{
+    "skip_members": {
+        "ax::": {
+            "Application": ["applicationScreenSizeChanged"]
+        }
+    }
+}

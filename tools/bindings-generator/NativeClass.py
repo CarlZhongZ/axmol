@@ -8,6 +8,8 @@ import traceback
 from Cheetah.Template import Template
 
 import ConvertUtils
+from NativeStruct import NativeStruct
+from NativeEnum import NativeEnum
 from Fields import NativeFunction
 from Fields import NativeField
 
@@ -17,19 +19,16 @@ class NativeClass(object):
         self.cursor = cursor
         self.class_name = cursor.displayname
         self.parents = []
-        self.fields = []
         self.public_fields = []
         self.constructors = []
         self.methods = {}
         self.static_methods = {}
         self.generator = generator
-        self.is_abstract = self.class_name in generator.abstract_classes
         self._current_visibility = cindex.AccessSpecifier.PRIVATE
         #for generate lua api doc
         self.override_methods = {}
 
-        self.target_class_name = generator.get_class_or_rename_class(self.class_name)
-        self.namespace_name        = ConvertUtils.get_namespace_name(cursor)
+        self.namespace_name = ConvertUtils.get_namespace_name(cursor)
         self.ns_full_name = ConvertUtils.get_namespaced_name(cursor)
         
         self.parse()
@@ -39,22 +38,36 @@ class NativeClass(object):
         parse the current cursor, getting all the necesary information
         '''
         print('parse class', self.ns_full_name)
-        self._deep_iterate(self.cursor)
+        for node in self.cursor.get_children():
+            self._process_node(node)
+
+    def _shouldSkip(self, name):
+        skip_members = self.generator.parseConfig['skip_members']
+
+        info = skip_members.get(self.namespace_name)
+        if not info:
+            return False
+
+        skipMethods = info.get(self.class_name)
+        if skipMethods:
+            return name in skipMethods
+
+        return False
 
     @property
     def validMethods(self):
         ret = []
-        for name, impl in self.methods.items():
-            if not self.generator.should_skip(self.class_name, name) and not impl.isNotSupported:
-                ret.append(impl)
+        for _, m in self.methods.items():
+            if not m.isNotSupported:
+                ret.append(m)
         return ret
 
     @property
     def validStaticMethods(self):
         ret = []
-        for name, impl in self.static_methods.items():
-            if not self.generator.should_skip(self.class_name, name) and not impl.isNotSupported:
-                ret.append(impl)
+        for _, m in self.static_methods.items():
+            if not m.isNotSupported:
+                ret.append(m)
         return ret
     
     @property
@@ -87,12 +100,6 @@ class NativeClass(object):
 
         return info
 
-    def _deep_iterate(self, cursor=None, depth=0):
-        for node in cursor.get_children():
-            # print("%s%s - %s" % ("> " * depth, node.displayname, node.kind))
-            if self._process_node(node):
-                self._deep_iterate(node, depth + 1)
-
     @staticmethod
     def _is_method_in_parents(current_class, method_name):
         if len(current_class.parents) > 0:
@@ -112,26 +119,20 @@ class NativeClass(object):
             parent = cursor.get_definition()
             parent_name = parent.displayname
 
-            if not self.class_name in self.generator.classes_have_no_parents:
-                if parent_name and parent_name not in self.generator.base_classes_to_skip:
-                    #if parent and self.generator.in_listed_classes(parent.displayname):
-                    if not (parent.displayname in ConvertUtils.parsedClasses):
-                        parent = NativeClass(parent, self.generator)
-                        ConvertUtils.parsedClasses[parent.class_name] = parent
-                    else:
-                        parent = ConvertUtils.parsedClasses[parent.displayname]
+            if parent_name:
+                parentNSName = ConvertUtils.get_namespaced_name(parent)
+                if parentNSName not in ConvertUtils.parsedClasses:
+                    ConvertUtils.parsedClasses[parentNSName] = NativeClass(parent, self.generator)
 
-                    self.parents.append(parent)
-
+                self.parents.append(ConvertUtils.parsedClasses[parentNSName])
         elif cursor.kind == cindex.CursorKind.FIELD_DECL:
-            self.fields.append(NativeField(cursor))
-            if self._current_visibility == cindex.AccessSpecifier.PUBLIC and NativeField.can_parse(cursor.type):
+            if self._current_visibility == cindex.AccessSpecifier.PUBLIC and NativeField.can_parse(cursor.type) and not self._shouldSkip(cursor.spelling):
                 self.public_fields.append(NativeField(cursor))
         elif cursor.kind == cindex.CursorKind.CXX_ACCESS_SPEC_DECL:
             self._current_visibility = cursor.access_specifier
         elif cursor.kind == cindex.CursorKind.CXX_METHOD and ConvertUtils.get_availability(cursor) != ConvertUtils.AvailabilityKind.DEPRECATED:
             # skip if variadic
-            if self._current_visibility == cindex.AccessSpecifier.PUBLIC and not cursor.type.is_function_variadic():
+            if self._current_visibility == cindex.AccessSpecifier.PUBLIC and not cursor.type.is_function_variadic() and not self._shouldSkip(cursor.spelling):
                 m = NativeFunction(cursor, self, False)
                 registration_name = self.generator.should_rename_function(self.class_name, m.name) or m.name
                 if m.is_override:
@@ -152,19 +153,25 @@ class NativeClass(object):
                         idx += 1
                     self.methods[curName] = m
                     m.lua_func_name = curName
-            return True
-
-        elif self._current_visibility == cindex.AccessSpecifier.PUBLIC and cursor.kind == cindex.CursorKind.CONSTRUCTOR and not self.is_abstract:
+        elif self._current_visibility == cindex.AccessSpecifier.PUBLIC and cursor.kind == cindex.CursorKind.CONSTRUCTOR:
             # Skip copy constructor
-            if cursor.displayname == self.class_name + "(const " + self.ns_full_name + " &)":
-                # print("Skip copy constructor: " + cursor.displayname)
-                return True
-            self.constructors.append(NativeFunction(cursor, self, True))
-
-            return True
-        # else:
-            # print >> sys.stderr, "unknown cursor: %s - %s" % (cursor.kind, cursor.displayname)
-        return False
+            if cursor.displayname != self.class_name + "(const " + self.ns_full_name + " &)":
+                self.constructors.append(NativeFunction(cursor, self, True))
+        elif self._current_visibility == cindex.AccessSpecifier.PUBLIC and cursor.kind == cindex.CursorKind.CLASS_DECL:
+            if ConvertUtils.isValidDefinition(cursor):
+                nsName = ConvertUtils.get_namespaced_name(cursor)
+                if self.generator.in_listed_classes(nsName) and nsName not in ConvertUtils.parsedClasses:
+                    ConvertUtils.parsedClasses[nsName] = NativeClass(cursor, self.generator)
+        elif self._current_visibility == cindex.AccessSpecifier.PUBLIC and cursor.kind == cindex.CursorKind.STRUCT_DECL:
+            if ConvertUtils.isValidDefinition(cursor):
+                nsName = ConvertUtils.get_namespaced_name(cursor)
+                if nsName not in ConvertUtils.parsedStructs:
+                    ConvertUtils.parsedStructs[nsName] = NativeStruct(cursor)
+        elif self._current_visibility == cindex.AccessSpecifier.PUBLIC and cursor.kind == cindex.CursorKind.ENUM_DECL:
+            if ConvertUtils.isValidDefinition(cursor):
+                nsName = ConvertUtils.get_namespaced_name(cursor)
+                if nsName not in ConvertUtils.parsedEnums:
+                    ConvertUtils.parsedEnums[nsName] = NativeEnum(cursor)
 
     def testUseTypes(self, useTypes):
         for field in self.public_fields:
@@ -216,10 +223,4 @@ class NativeClass(object):
 
     @property
     def isRefClass(self):
-        if self.ns_full_name == 'ax::Ref':
-            return True
-
-        if self.parents:
-            return self.parents[0].isRefClass
-        else:
-            return False
+        return self.ns_full_name not in self.generator.non_ref_classes
