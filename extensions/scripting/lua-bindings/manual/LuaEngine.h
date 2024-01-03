@@ -32,7 +32,6 @@ extern "C" {
 }
 
 #include "base/ScriptSupport.h"
-#include "scripting/lua-bindings/manual/LuaStack.h"
 #include "scripting/lua-bindings/manual/LuaValue.h"
 #include "scripting/lua-bindings/manual/Lua-BindingsExport.h"
 
@@ -64,22 +63,13 @@ public:
      */
     virtual ~LuaEngine(void);
 
-    /**
-     * Get LuaStack of the LuaEngine.
-     * All the interactive operation are all base on the LuaStack.
-     *
-     * @return LuaStack object.
-     */
-    LuaStack* getLuaStack(void) { return _stack; }
-
     virtual void removeScriptObjectByObject(Ref* obj);
 
 private:
-    LuaEngine(void) : _stack(nullptr) {}
+    LuaEngine(void) {}
     bool init(void);
 private:
     static LuaEngine* _defaultEngine;
-    LuaStack* _stack;
 };
 
 NS_AX_END

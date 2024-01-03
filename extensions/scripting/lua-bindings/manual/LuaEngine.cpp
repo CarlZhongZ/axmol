@@ -23,8 +23,7 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
  ****************************************************************************/
-
-#include "scripting/lua-bindings/manual/LuaEngine.h"
+#include "LuaEngine.h"
 #include "Tolua.h"
 
 NS_AX_BEGIN
@@ -43,7 +42,7 @@ LuaEngine* LuaEngine::getInstance(void)
 
 LuaEngine::~LuaEngine(void)
 {
-    AX_SAFE_RELEASE(_stack);
+    Tolua::destroy();
     _defaultEngine = nullptr;
 }
 
@@ -53,8 +52,7 @@ void LuaEngine::removeScriptObjectByObject(Ref* obj) {
 
 bool LuaEngine::init(void)
 {
-    _stack = LuaStack::create();
-    _stack->retain();
+    Tolua::init();
     return true;
 }
 

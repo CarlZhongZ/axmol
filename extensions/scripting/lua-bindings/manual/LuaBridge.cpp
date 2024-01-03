@@ -30,11 +30,6 @@ NS_AX_BEGIN
 lua_State* LuaBridge::s_luaState = NULL;
 int LuaBridge::s_newFunctionId   = 0;
 
-LuaStack* LuaBridge::getStack()
-{
-    return LuaEngine::getInstance()->getLuaStack();
-}
-
 int LuaBridge::pushLuaFunctionById(int functionId)
 {
     lua_State* L = s_luaState;

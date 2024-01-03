@@ -5,8 +5,6 @@ set(lua_bindings_files
 
     manual/LuaEngine.h
     manual/LuaEngine.cpp
-    manual/LuaStack.h
-    manual/LuaStack.cpp
     manual/LuaBridge.h
     manual/LuaBridge.cpp
     manual/LuaValue.h
