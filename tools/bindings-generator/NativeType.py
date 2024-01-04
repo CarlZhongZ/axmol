@@ -292,6 +292,11 @@ class NativeType(object):
         ret = NativeType()
         ret._initWithTypeStr(typename)
         return ret
+    
+    @staticmethod
+    def is_equal(tp1, tp2):
+        return tp1.ns_full_name == tp2.ns_full_name and \
+            tp1.is_pointer == tp2.is_pointer
 
     @property
     def luaType(self):
