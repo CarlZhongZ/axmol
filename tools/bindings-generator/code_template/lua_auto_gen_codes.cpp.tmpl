@@ -30,12 +30,20 @@ NS_AX_BEGIN
     if (!self) {
         return 0;
     }
-
     #end if
+
     #set params = []
+    #set retParams = []
     #for i in range(len(func.arguments))
         #set tp = func.arguments[i]
-        #silent params.append('arg%d' % i)
+        #if tp.isNormalClass
+            #silent params.append('*arg%d' % i)
+        #elif tp.isBasicTypePointer
+            #silent params.append('&arg%d' % i)
+            #silent retParams.append(('arg%d' % i , tp))
+        #else
+            #silent params.append('arg%d' % i)
+        #end if
     ${tp.genGetCode(i + offset, 'arg%d' % i, True)}
     #end for
     #set extraparms = ', '.join(params)
@@ -48,20 +56,38 @@ NS_AX_BEGIN
         #if func.static:
             #if func.ret_type.retCount == 0
     ${cls.ns_full_name}::${func.name}(${extraparms});
-    return 0;
             #else
     auto ret = ${cls.ns_full_name}::${func.name}(${extraparms});
-    ${func.ret_type.genPushCode('ret')}
-    return 1;
+    ${func.ret_type.genPushCode('ret', True)}
+            #end if
+            #set nReturns = func.ret_type.retCount + len(retParams)
+            #if nReturns > 0
+                #if len(retParams) > 0
+                    #for arg, tp in retParams:
+    ${tp.genPushCode(arg, False)}
+                    #end for
+                #end if
+    return ${nReturns};
+            #else
+    return 0;
             #end if
         #else
             #if func.ret_type.retCount == 0
     self->${func.name}(${extraparms});
-    return 0;
             #else
     auto ret = self->${func.name}(${extraparms});
-    ${func.ret_type.genPushCode('ret')}
-    return 1;
+    ${func.ret_type.genPushCode('ret', True)}
+            #end if
+            #set nReturns = func.ret_type.retCount + len(retParams)
+            #if nReturns > 0
+                #if len(retParams) > 0
+                    #for arg, tp in retParams:
+    ${tp.genPushCode(arg, False)}
+                    #end for
+                #end if
+    return ${nReturns};
+            #else
+    return 0;
             #end if
         #end if
     #end if
@@ -110,7 +136,7 @@ static int ${cls.cppRefName}_${m.name}__get(lua_State* L) {
     if (!self) {
         return 0;
     }
-    ${m.ntype.genPushCode('self->%s' % m.name)}
+    ${m.ntype.genPushCode('self->%s' % m.name, True)}
     return 1;
 }
         #end if
@@ -121,7 +147,13 @@ static int ${cls.cppRefName}_${m.name}__set(lua_State* L) {
         return 0;
     }
     ${m.ntype.genGetCode(2, 'arg', True)}
+
+    #if m.ntype.isNormalClass
+    self->${m.name} = *arg;
+    #else
     self->${m.name} = arg;
+    #end if
+
     return 0;
 }
     #end for

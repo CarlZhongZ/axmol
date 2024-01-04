@@ -128,8 +128,7 @@ class NativeField(object):
 
     @staticmethod
     def can_parse(ntype):
-        native_type = NativeType.from_type(ntype)
-        if ntype.kind == cindex.TypeKind.UNEXPOSED and native_type.name != "std::string" and native_type.name != "cxx17::string_view":
+        if ntype.kind == cindex.TypeKind.UNEXPOSED:
             return False
         return True
 
@@ -145,7 +144,8 @@ class NativeField(object):
 
     @property
     def isNotSupported(self):
-        return self.ntype.isNotSupported
+        # field 不支持 lua 映射类型的指针
+        return self.ntype.isNotSupported or self.ntype.isBasicTypePointer
 
     def containsType(self, typeName):
         return self.ntype.containsType(typeName)

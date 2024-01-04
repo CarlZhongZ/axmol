@@ -118,9 +118,6 @@ class NativeType(object):
     def __init__(self):
         allCreatedTypes.append(self)
 
-        # 是否为定义方法的返回值
-        self.is_ret_type = False
-
         self.not_supported = False
 
         self.is_class = False
@@ -166,6 +163,11 @@ class NativeType(object):
                 if ConvertUtils.parsedStructs[self.ns_full_name].isNotSupported:
                     self.not_supported = True
                     return
+
+        # void*, num* 不支持
+        if (self.is_void or self.is_numeric) and self.is_pointer > 0:
+            self.not_supported = True
+            return            
 
         # 指针的指针不支持
         if self.is_pointer >= 2 or self.is_reference >= 2:
@@ -230,7 +232,7 @@ class NativeType(object):
 
             nt.is_pointer += 1
 
-            if nt.is_numeric and nt.ns_full_name == 'char':
+            if nt.is_numeric and nt.ns_full_name == 'char' and nt.is_const:
                 # char * 处理
                 nt.is_numeric = False
                 nt.is_string = True
@@ -263,9 +265,10 @@ class NativeType(object):
         self.ns_full_name = typename
 
         if typename in _numberTypeset:
-            self.is_numeric = True
-        elif typename == 'char' and self.is_pointer == 1:
-            self.is_string = True
+            if typename == 'char' and self.is_pointer == 1 and self.is_const:
+                self.is_string = True
+            else:
+                self.is_numeric = True
         elif typename == 'void':
             self.is_void = True
         elif typename == 'bool':
@@ -300,7 +303,6 @@ class NativeType(object):
         if not self.is_function:
             # parse class
             self.is_class = True
-
 
     @staticmethod
     def from_type_str(typename):
@@ -432,33 +434,46 @@ class NativeType(object):
                                         'loc': loc
                                     }]))
         elif self.is_class:
-            return '%s = (%s)Tolua::toType(L, "%s", %d);' % (varName, self.cppDeclareTypeName, self.luaType, loc)
+            if not bDeclareVar and self.isNormalClass:
+                return '%s = *(%s)Tolua::toType(L, "%s", %d);' % (varName, self.cppDeclareTypeName, self.luaType, loc)
+            else:
+                return '%s = (%s)Tolua::toType(L, "%s", %d);' % (varName, self.cppDeclareTypeName, self.luaType, loc)
 
-    def genPushCode(self, varName):
+    # bIsCppType: push 的类型是 cpp 原生定义的类型，而不是 get 代码定义的类型
+    def genPushCode(self, varName, bIsCppType):
         assert (not self.isVoid)
 
         if self.isExtLuaType:
-            if self.is_ret_type:
-                if self.is_pointer == 0:
-                    return 'tolua_push_value(L, %s);' % (varName, )
-                else:
-                    return 'tolua_push_value(L, *%s);' % (varName, )
+            if bIsCppType and self.is_pointer == 1:
+                return 'tolua_push_value(L, *%s);' % (varName, )
             else:
                 return 'tolua_push_value(L, %s);' % (varName, )
-        if self.is_numeric or self.is_enum:
+        elif self.is_enum:
+            assert(self.is_pointer == 0)
             return 'lua_pushnumber(L, (double)%s);' % (varName, )
+        elif self.is_numeric:
+            if bIsCppType and self.is_pointer == 1:
+                return 'lua_pushnumber(L, (double)*%s);' % (varName, )
+            else:
+                return 'lua_pushnumber(L, (double)%s);' % (varName, )
         elif self.is_boolean:
-            return 'lua_pushboolean(L, %s);' % (varName, )
+            if bIsCppType and self.is_pointer == 1:
+                return 'lua_pushboolean(L, *%s);' % (varName, )
+            else:
+                return 'lua_pushboolean(L, %s);' % (varName, )
         elif self.is_string:
+            assert(self.is_pointer == 1)  # char *
             return 'lua_pushstring(L, %s);' % (varName, )
         elif self.is_class:
-            if self.is_pointer > 0:
-                if self.isRefClass:
-                    return 'Tolua::pushRefType(L, (void*)%s);' % (varName, )
+            if self.isRefClass:
+                if self.is_pointer != 1:
+                    print(f'error~~~ {self.is_pointer} {self.is_reference} {self.ns_full_name}')
+                return 'Tolua::pushRefType(L, (void*)%s);' % (varName, )
+            else:
+                if bIsCppType and self.is_pointer == 0:
+                    return 'Tolua::pushType(L, (void*)new %s(%s), "%s");' % (self.ns_full_name, varName, self.luaType)
                 else:
                     return 'Tolua::pushType(L, (void*)new %s(*%s), "%s");' % (self.ns_full_name, varName, self.luaType)
-            else:
-                return 'Tolua::pushType(L, (void*)new %s(%s), "%s");' % (self.ns_full_name, varName, self.luaType)
 
     @property
     def isRefClass(self):
@@ -482,3 +497,11 @@ class NativeType(object):
                                         self.is_table or \
                                         self.is_array or \
                                         self.is_struct
+
+    @property
+    def isBasicTypePointer(self):
+        return (self.isExtLuaType or self.is_numeric or self.is_boolean) and self.is_pointer > 0
+    
+    @property
+    def isNormalClass(self):
+        return self.is_class and not self.isRefClass and self.is_pointer == 0

@@ -6,7 +6,7 @@ int __funcID$loc = (int)lua_tonumber(L, $loc);
     $varName = [=](${', '.join(params)}) {
         Tolua::pushFunction(L, __funcID$loc);
 #for i, arg in enumerate($funcType.param_types)
-        ${arg.genPushCode('p%d' % i)}
+        ${arg.genPushCode('p%d' % i, True)}
 #end for
         auto nPop = Tolua::call(L, ${len($funcType.param_types)}, $funcType.ret_type.retCount);
     #if $funcType.ret_type.retCount == 1

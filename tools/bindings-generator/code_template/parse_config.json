@@ -1,7 +1,8 @@
 {
     "skip_members": {
         "ax::": {
-            "Application": ["applicationScreenSizeChanged"]
+            "Application": ["applicationScreenSizeChanged"],
+            "GLViewImpl": ["loadGLES2"]
         }
     }
 }
