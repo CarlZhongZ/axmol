@@ -132,6 +132,8 @@ class NativeType(object):
 
         self.is_enum = False
 
+        self.container_add_method_name = None  # cpp 对象增加元素的方法名称
+
         self.is_table = False
         self.table_ele_type = None
 
@@ -160,19 +162,6 @@ class NativeType(object):
             elif ns_full_name in ConvertUtils.parsedStructs:
                 self.is_class = False
                 self.is_struct = True
-                if ConvertUtils.parsedStructs[self.ns_full_name].isNotSupported:
-                    self.not_supported = True
-                    return
-
-        # void*, num* 不支持
-        if (self.is_void or self.is_numeric) and self.is_pointer > 0:
-            self.not_supported = True
-            return            
-
-        # 指针的指针不支持
-        if self.is_pointer >= 2 or self.is_reference >= 2:
-            self.not_supported = True
-            return
 
         if self.is_enum or self.is_class or self.is_struct:
             if self.ns_full_name not in useTypes:
@@ -213,10 +202,10 @@ class NativeType(object):
             elif cntype.kind == cindex.TypeKind.ENUM:
                 self.is_enum = True
             else:
-                # cindex.TypeKind.MEMBERPOINTER
-                # cindex.TypeKind.CONSTANTARRAY
-                # cindex.TypeKind.FUNCTIONPROTO
-                # cindex.TypeKind.INCOMPLETEARRAY
+                assert(cntype.kind == cindex.TypeKind.MEMBERPOINTER or \
+                       cntype.kind == cindex.TypeKind.CONSTANTARRAY or \
+                        cntype.kind == cindex.TypeKind.FUNCTIONPROTO or \
+                            cntype.kind == cindex.TypeKind.INCOMPLETEARRAY)
                 self.not_supported = True
         else:
             self._tryParseNSName()
@@ -226,9 +215,6 @@ class NativeType(object):
         cntype = ntype.get_canonical()
         if cntype.kind == cindex.TypeKind.POINTER:
             nt = NativeType.from_type(cntype.get_pointee())
-            if nt.is_pointer > 0:
-                # 不支持指针的指针
-                nt.not_supported = True
 
             nt.is_pointer += 1
 
@@ -283,19 +269,16 @@ class NativeType(object):
 
         if self.ns_full_name in _strNsNameSet:
             self.is_string = True
+            return
 
         for parseFun in _arrayParseFun:
-            isArray, arrayType = parseFun(self.ns_full_name)
-            if isArray:
-                self.is_array = True
-                self.array_ele_type = arrayType
+            self.is_array, self.array_ele_type, self.container_add_method_name = parseFun(self.ns_full_name)
+            if self.is_array:
                 return
 
         for parseFun in _tableParseFun:
-            isTable, tableType = parseFun(self.ns_full_name)
-            if isTable:
-                self.is_table = True
-                self.table_ele_type = tableType
+            self.is_table, self.table_ele_type, self.container_add_method_name = parseFun(self.ns_full_name)
+            if self.is_table:
                 return
 
         # parse function
@@ -346,7 +329,21 @@ class NativeType(object):
         if self.not_supported:
             return True
         
-        if self.is_function:
+        # 不支持指针的指针
+        if self.is_pointer >= 2:
+            return True
+        
+        # void*, num* 不支持
+        if (self.is_void or self.is_numeric) and self.is_pointer == 1:
+            return True
+
+        if self.is_struct:
+            return ConvertUtils.parsedStructs[self.ns_full_name].isNotSupported
+        elif self.is_array:
+            return self.array_ele_type.isNotSupported
+        elif self.is_table:
+            return self.table_ele_type.isNotSupported
+        elif self.is_function:
             for p in self.param_types:
                 if p.isNotSupported:
                     return True
@@ -411,11 +408,19 @@ class NativeType(object):
         assert (not self.isVoid)
 
         if self.isExtLuaType:
-            ret = []
-            if bDeclareVar:
-                ret.append('%s %s;' % (self.cppDeclareTypeName, varName))
-            ret.append('tolua_get_value(L, %d, %s);' % (loc, varName))
-            return ''.join(ret)
+            if self.is_array:
+                return str(Template(file='code_template/VectorGet.tmpl',
+                                    searchList=[self, {
+                                        'loc': loc,
+                                        'varName': varName,
+                                        'bDeclareVar': bDeclareVar,
+                                    }]))
+            else:
+                ret = []
+                if bDeclareVar:
+                    ret.append('%s %s;' % (self.cppDeclareTypeName, varName))
+                ret.append('tolua_get_value(L, %d, %s);' % (loc, varName))
+                return ''.join(ret)
 
         if bDeclareVar:
             varName = '%s %s' % (self.cppDeclareTypeName, varName)
@@ -434,7 +439,7 @@ class NativeType(object):
                                         'loc': loc
                                     }]))
         elif self.is_class:
-            if not bDeclareVar and self.isNormalClass:
+            if not bDeclareVar and self.is_pointer == 0:
                 return '%s = *(%s)Tolua::toType(L, "%s", %d);' % (varName, self.cppDeclareTypeName, self.luaType, loc)
             else:
                 return '%s = (%s)Tolua::toType(L, "%s", %d);' % (varName, self.cppDeclareTypeName, self.luaType, loc)
@@ -444,10 +449,17 @@ class NativeType(object):
         assert (not self.isVoid)
 
         if self.isExtLuaType:
-            if bIsCppType and self.is_pointer == 1:
-                return 'tolua_push_value(L, *%s);' % (varName, )
-            else:
-                return 'tolua_push_value(L, %s);' % (varName, )
+            if self.is_array:
+                return str(Template(file='code_template/VectorPush.tmpl',
+                                    searchList=[self, {
+                                        'varName': varName,
+                                        'bIsCppType': bIsCppType,
+                                    }]))
+            else: 
+                if bIsCppType and self.is_pointer == 1:
+                    return 'tolua_push_value(L, *%s);' % (varName, )
+                else:
+                    return 'tolua_push_value(L, %s);' % (varName, )
         elif self.is_enum:
             assert(self.is_pointer == 0)
             return 'lua_pushnumber(L, (double)%s);' % (varName, )
@@ -503,5 +515,5 @@ class NativeType(object):
         return (self.isExtLuaType or self.is_numeric or self.is_boolean) and self.is_pointer > 0
     
     @property
-    def isNormalClass(self):
-        return self.is_class and not self.isRefClass and self.is_pointer == 0
+    def isClassNoPointer(self):
+        return self.is_class and self.is_pointer == 0

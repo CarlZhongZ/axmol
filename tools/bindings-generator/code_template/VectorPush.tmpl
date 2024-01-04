@@ -1,0 +1,11 @@
+    lua_newtable(L);
+    int i = 1;
+#if $bIsCppType and $is_pointer == 1
+    for (auto& ele : *${varName})
+#else
+    for (const auto& ele : ${varName})
+#end if
+    {
+        ${$array_ele_type.genPushCode('ele', True)}
+        lua_seti(L, -2, i++);
+    }

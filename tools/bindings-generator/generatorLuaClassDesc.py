@@ -202,8 +202,13 @@ class Generator(object):
         fClassInfo = open(os.path.join("classes.txt"), "wt+", encoding='utf8', newline='\n')
         for _, cls in parsedClasses.items():
             base = cls.parents[0].ns_full_name if cls.parents else 'None'
-            fClassInfo.write(f'class:{cls.ns_full_name} base:{base} isRefClass:{cls.isRefClass}\n')
-
+            fClassInfo.write(f'\n\n\nclass:{cls.ns_full_name} base:{base} isRefClass:{cls.isRefClass}\n')
+            for _, m in cls.methods.items():
+                fClassInfo.write(f'\t{m.cursor.displayname} {m.isNotSupported}\n')
+                fClassInfo.write('\t')
+                for t in m.arguments:
+                    fClassInfo.write(f'\t{t.ns_full_name}: {t.isNotSupported} {t.not_supported} {t.is_pointer} {t.is_reference} {t.is_class} {t.is_string}')
+                fClassInfo.write('\n')
 
     def _pretty_print(self, diagnostics):
         errors=[]

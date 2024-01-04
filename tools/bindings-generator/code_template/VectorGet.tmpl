@@ -1,0 +1,20 @@
+#if $bDeclareVar
+    ${ns_full_name} ${varName};
+#end if
+    if (lua_istable(L, ${loc})) {
+        auto len = (int)lua_rawlen(L, ${loc});
+        for (int i = 1; i <= len; i++) {
+            lua_geti(L, ${loc}, i);
+            ${$array_ele_type.genGetCode(-1, 'ele', True)}
+            lua_pop(L, 1);
+#if $array_ele_type.is_class
+                if (!ele) continue;
+#end if
+
+#if $array_ele_type.isClassNoPointer
+            ${varName}.${container_add_method_name}(*ele);
+#else
+            ${varName}.${container_add_method_name}(ele);
+#end if
+        }
+    }

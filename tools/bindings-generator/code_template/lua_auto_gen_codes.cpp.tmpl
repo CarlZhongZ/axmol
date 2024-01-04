@@ -36,7 +36,7 @@ NS_AX_BEGIN
     #set retParams = []
     #for i in range(len(func.arguments))
         #set tp = func.arguments[i]
-        #if tp.isNormalClass
+        #if tp.is_class and tp.is_pointer == 0
             #silent params.append('*arg%d' % i)
         #elif tp.isBasicTypePointer
             #silent params.append('&arg%d' % i)
@@ -148,7 +148,7 @@ static int ${cls.cppRefName}_${m.name}__set(lua_State* L) {
     }
     ${m.ntype.genGetCode(2, 'arg', True)}
 
-    #if m.ntype.isNormalClass
+    #if m.ntype.isClassNoPointer
     self->${m.name} = *arg;
     #else
     self->${m.name} = arg;
