@@ -9,7 +9,7 @@ from Cheetah.Template import Template
 
 import ConvertUtils
 
-testLog = open(os.path.join("types.txt"), "wt+", encoding='utf8', newline='\n')
+testLog = open(os.path.join("configs/types.txt"), "wt+", encoding='utf8', newline='\n')
 allCreatedTypes = []
 
 numberTypes = {
@@ -413,7 +413,7 @@ class NativeType(object):
 
         if self.isExtLuaType:
             if self.is_array:
-                return str(Template(file='code_template/VectorGet.tmpl',
+                return str(Template(file='configs/VectorGet.tmpl',
                                     searchList=[self, {
                                         'loc': loc,
                                         'varName': varName,
@@ -436,7 +436,7 @@ class NativeType(object):
         elif self.is_string:
             return '%s = lua_tostring(L, %d);' % (varName, loc)
         elif self.is_function:
-            return str(Template(file='code_template/lua_fun_to_std_fun.tmpl',
+            return str(Template(file='configs/lua_fun_to_std_fun.tmpl',
                                     searchList=[{
                                         'funcType': self,
                                         'varName' :varName,
@@ -454,7 +454,7 @@ class NativeType(object):
 
         if self.isExtLuaType:
             if self.is_array:
-                return str(Template(file='code_template/VectorPush.tmpl',
+                return str(Template(file='configs/VectorPush.tmpl',
                                     searchList=[self, {
                                         'varName': varName,
                                         'bIsCppType': bIsCppType,

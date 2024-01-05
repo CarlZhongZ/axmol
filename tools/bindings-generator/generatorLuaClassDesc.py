@@ -32,7 +32,7 @@ class Generator(object):
 
         self.index = cindex.Index.create()
         self.outdir = outdir
-        with open('code_template/parse_config.json', 'r') as f:
+        with open('configs/parse_config.json', 'r') as f:
             self.parseConfig = json.loads(f.read())
 
         self.search_paths = [
@@ -162,7 +162,7 @@ class Generator(object):
         classTypes = self.sorted_classes()
 
         f = open(os.path.join(self.outdir, "engine_types.lua"), "wt+", encoding='utf8', newline='\n')
-        f.write(str(Template(file='code_template/engine_types.lua.tmpl',
+        f.write(str(Template(file='configs/engine_types.lua.tmpl',
                                     searchList=[{
                                         'enumTypes': enumTypes,
                                         'parsedEnums' :parsedEnums,
@@ -173,7 +173,7 @@ class Generator(object):
                                     }])))
 
         fEnum = open(os.path.join(self.outdir, "engine_enums.lua"), "wt+", encoding='utf8', newline='\n')
-        fEnum.write(str(Template(file='code_template/engine_enums.lua.tmpl',
+        fEnum.write(str(Template(file='configs/engine_enums.lua.tmpl',
                                     searchList=[{
                                         'enumTypes': enumTypes,
                                         'parsedEnums' :parsedEnums,
@@ -183,7 +183,7 @@ class Generator(object):
         fAutoGenCodesCpp = open(os.path.join(self.outdir, "lua_auto_gen_codes.cpp"), "wt+",
                               encoding='utf8', newline='\n')
 
-        fAutoGenCodesCpp.write(str(Template(file='code_template/lua_auto_gen_codes.cpp.tmpl',
+        fAutoGenCodesCpp.write(str(Template(file='configs/lua_auto_gen_codes.cpp.tmpl',
                                     searchList=[self, {
                                         'structTypes': structTypes,
                                         'classTypes': classTypes,
@@ -193,13 +193,13 @@ class Generator(object):
         
         fAutoConvertCodesH = open(os.path.join(self.outdir, "tolua_auto_convert.h"), "wt+",
                               encoding='utf8', newline='\n')
-        fAutoConvertCodesH.write(str(Template(file='code_template/tolua_auto_convert.h.tmpl',
+        fAutoConvertCodesH.write(str(Template(file='configs/tolua_auto_convert.h.tmpl',
                                     searchList=[self, {
                                         'structTypes': structTypes,
                                         'parsedStructs': parsedStructs,
                                     }])))
 
-        fClassInfo = open(os.path.join("classes.txt"), "wt+", encoding='utf8', newline='\n')
+        fClassInfo = open(os.path.join("configs/classes.txt"), "wt+", encoding='utf8', newline='\n')
         for _, cls in parsedClasses.items():
             base = cls.parents[0].ns_full_name if cls.parents else 'None'
             fClassInfo.write(f'\n\n\nclass:{cls.ns_full_name} base:{base} isRefClass:{cls.isRefClass}\n')
