@@ -5,11 +5,11 @@ import re
 import os
 import inspect
 import traceback
+import json
 from Cheetah.Template import Template
 
-from configparser import ConfigParser
-
-generator = None
+with open('configs/parse_config.json', 'r') as f:
+    parseConfig = json.loads(f.read())
 
 parsedEnums = {}
 
@@ -18,16 +18,7 @@ parsedStructs = {}
 parsedClasses = {}
 
 # 只会导出 ns_map 记录的命名空间中的类
-ns_map = (
-    ("ax::experimental::ui::", "axexp."),
-    ("ax::experimental::", "axexp."),
-    ("ax::extension::", "ax."),
-    ("ax::tweenfunc::", "ax."),
-    ("ax::backend::", "axb."),
-    ("ax::ui::", "axui."),
-    ("ax::", "ax."),
-    ("spine::", "sp."),
-)
+ns_map = parseConfig['ns_map']
 
 def nsNameToLuaName(namespace_name):
     for ns, luaName in ns_map:
@@ -218,6 +209,6 @@ def isValidDefinition(cursor):
         return False
 
     iter = cursor.get_children()
-    for child in iter:
+    for _ in iter:
         return True
     return False

@@ -84,11 +84,16 @@ class NativeFunction(object):
     def luaFieldDesc(self):
         if self.isNotSupported:
             return
-        
-        ret = ['---@field %s fun(self: %s' % (self.lua_func_name, self.cls.luaClassName)]
+
+        isStatic = self.isStatic
+        if isStatic:
+            ret = ['---@field %s fun(' % (self.lua_func_name)]
+        else:
+            ret = ['---@field %s fun(self: %s' % (self.lua_func_name, self.cls.luaClassName)]
 
         for i in range(self.min_args):
-            ret.append(', %s: %s' % (self.argumtntTips[i] or 'p%d' % i, self.arguments[i].luaType))
+            s = '%s: %s' if i == 0 and isStatic else ', %s: %s'
+            ret.append(s % (self.argumtntTips[i] or 'p%d' % i, self.arguments[i].luaType))
 
         for i in range(self.min_args, len(self.arguments)):
             ret.append(', %s?: %s' % (self.argumtntTips[i] or 'p%d' % i, self.arguments[i].luaType))
@@ -127,6 +132,11 @@ class NativeFunction(object):
                 return False
 
         return True
+
+    @property
+    def isStatic(self):
+        return self.is_constructor or self.static
+
 
 class NativeField(object):
     def __init__(self, cursor):

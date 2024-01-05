@@ -28,12 +28,8 @@ init_custom_cpp_types.init()
 
 class Generator(object):
     def __init__(self, config, sec, outdir):
-        ConvertUtils.generator = self
-
         self.index = cindex.Index.create()
         self.outdir = outdir
-        with open('configs/parse_config.json', 'r') as f:
-            self.parseConfig = json.loads(f.read())
 
         self.search_paths = [
             os.path.join(config.get('DEFAULT', 'axdir'), 'core'),
@@ -48,17 +44,17 @@ class Generator(object):
                 self.classes[lists[0]] = lists[1][:-1].split(' ')
 
         self.ref_classes = set()
-        for ns, names in self.parseConfig['ref_classes'].items():
+        for ns, names in ConvertUtils.parseConfig['ref_classes'].items():
             for name in names:
                 self.ref_classes.add(f'{ns}{name}')
 
         self.non_ref_classes = set()
-        for ns, names in self.parseConfig['non_ref_classes'].items():
+        for ns, names in ConvertUtils.parseConfig['non_ref_classes'].items():
             for name in names:
                 self.non_ref_classes.add(f'{ns}{name}')
 
         self.custorm_lua_class_info = set()
-        for ns, names in self.parseConfig['custorm_lua_class_info'].items():
+        for ns, names in ConvertUtils.parseConfig['custorm_lua_class_info'].items():
             for name in names:
                 self.custorm_lua_class_info.add(f'{ns}{name}')
 
@@ -167,7 +163,7 @@ class Generator(object):
 
         classTypes = self.sorted_classes()
 
-        f = open(os.path.join(self.outdir, "engine_types.lua"), "wt+", encoding='utf8', newline='\n')
+        f = open(os.path.abspath("../../app/Content/src/framework/declare_types/engine_types.lua"), "wt+", encoding='utf8', newline='\n')
         f.write(str(Template(file='configs/engine_types.lua.tmpl',
                                     searchList=[{
                                         'enumTypes': enumTypes,
@@ -178,7 +174,7 @@ class Generator(object):
                                         'parsedClasses': parsedClasses,
                                     }])))
 
-        fEnum = open(os.path.join(self.outdir, "engine_enums.lua"), "wt+", encoding='utf8', newline='\n')
+        fEnum = open(os.path.abspath("../../app/Content/src/framework/declare_types/engine_enums.lua"), "wt+", encoding='utf8', newline='\n')
         fEnum.write(str(Template(file='configs/engine_enums.lua.tmpl',
                                     searchList=[{
                                         'enumTypes': enumTypes,

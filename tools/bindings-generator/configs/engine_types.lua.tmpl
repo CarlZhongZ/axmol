@@ -25,6 +25,9 @@ ${m.luaFieldDesc} @ field
 
 
 
+ax = {}
+sp = {}
+
 ## classTypes
 #for classType in $classTypes
     #set classInfo = $parsedClasses[classType]
@@ -53,4 +56,7 @@ ${m.luaFieldDesc} @ field
     #for m in classInfo.validMethods
 ${m.luaFieldDesc} @ method
     #end for
+
+---@type ${classInfo.luaClassName}S
+${classInfo.luaClassName} = nil
 #end for

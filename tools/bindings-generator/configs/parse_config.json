@@ -1,4 +1,14 @@
 {
+    "ns_map": [
+        ["ax::experimental::ui::", "axexp."],
+        ["ax::experimental::", "axexp."],
+        ["ax::extension::", "ax."],
+        ["ax::tweenfunc::", "ax."],
+        ["ax::backend::", "axb."],
+        ["ax::ui::", "axui."],
+        ["ax::", "ax."],
+        ["spine::", "sp."]
+    ],
     "ref_classes": {
         "ax::": [
             "Director",

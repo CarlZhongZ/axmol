@@ -42,7 +42,7 @@ class NativeClass(object):
             self._process_node(node)
 
     def _shouldSkip(self, name):
-        skip_members = self.generator.parseConfig['skip_members']
+        skip_members = ConvertUtils.parseConfig['skip_members']
 
         info = skip_members.get(self.namespace_name)
         if not info:
