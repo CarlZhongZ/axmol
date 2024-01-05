@@ -116,6 +116,18 @@ class NativeFunction(object):
 
         return self.ret_type.containsType(typeName)
 
+    def isEqual(self, m):
+        if len(self.arguments) != len(m.arguments):
+            return False
+        if not self.ret_type.isEqual(m.ret_type):
+            return False
+        
+        for i, arg in enumerate(self.arguments):
+            if not arg.isEqual(m.arguments[i]):
+                return False
+
+        return True
+
 class NativeField(object):
     def __init__(self, cursor):
         cursor = cursor.canonical

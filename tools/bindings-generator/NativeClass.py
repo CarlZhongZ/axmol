@@ -137,18 +137,22 @@ class NativeClass(object):
                 registration_name = self.generator.should_rename_function(self.class_name, m.name) or m.name
                 if m.is_override:
                     if NativeClass._is_method_in_parents(self, registration_name):
-                        return False
+                        return
 
                 idx = 1
                 curName = registration_name
                 if m.static:
                     while curName in self.static_methods:
+                        if m.isEqual(self.static_methods[curName]):
+                            return
                         curName = '%s_%d' % (registration_name, idx)
                         idx += 1
                     self.static_methods[curName] = m
                     m.lua_func_name = curName
                 else:
                     while curName in self.methods:
+                        if m.isEqual(self.methods[curName]):
+                            return
                         curName = '%s_%d' % (registration_name, idx)
                         idx += 1
                     self.methods[curName] = m
