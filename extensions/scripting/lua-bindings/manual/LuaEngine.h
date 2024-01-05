@@ -32,7 +32,6 @@ extern "C" {
 }
 
 #include "base/ScriptSupport.h"
-#include "scripting/lua-bindings/manual/LuaValue.h"
 #include "scripting/lua-bindings/manual/Lua-BindingsExport.h"
 
 /**
