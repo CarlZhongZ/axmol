@@ -81,6 +81,9 @@ class NativeClass(object):
     
     @property
     def validConstructors(self):
+        if self.ns_full_name not in self.generator.non_ref_classes:
+            return {}
+
         validStaticMethods  = self.validStaticMethods
         info = {}
         i = 1
@@ -97,6 +100,7 @@ class NativeClass(object):
                     break
 
             info[curName] = m
+            m.lua_func_name = curName
 
         return info
 

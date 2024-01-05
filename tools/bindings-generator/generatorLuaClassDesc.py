@@ -47,14 +47,20 @@ class Generator(object):
             if len(lists) == 2:
                 self.classes[lists[0]] = lists[1][:-1].split(' ')
 
+        self.ref_classes = set()
+        for ns, names in self.parseConfig['ref_classes'].items():
+            for name in names:
+                self.ref_classes.add(f'{ns}{name}')
+
         self.non_ref_classes = set()
-        non_ref_classes = re.split(',\n?', config.get(sec, 'non_ref_classes'))
-        for s in non_ref_classes:
-            lists = s.split('[')
-            if len(lists) == 2:
-                ns = lists[0]
-                for className in lists[1][:-1].split(' '):
-                    self.non_ref_classes.add(ns + className)
+        for ns, names in self.parseConfig['non_ref_classes'].items():
+            for name in names:
+                self.non_ref_classes.add(f'{ns}{name}')
+
+        self.custorm_lua_class_info = set()
+        for ns, names in self.parseConfig['custorm_lua_class_info'].items():
+            for name in names:
+                self.custorm_lua_class_info.add(f'{ns}{name}')
 
         self.clang_args = (config.get(sec, 'clang_args') or "").split(" ")
         extend_clang_args = []
@@ -81,7 +87,7 @@ class Generator(object):
         return None
 
     def in_listed_classes(self, nsName):
-        if nsName in self.non_ref_classes:
+        if nsName in self.non_ref_classes or nsName in self.ref_classes:
             return True
 
         for ns, names in self.classes.items():

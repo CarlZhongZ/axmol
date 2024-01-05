@@ -1,8 +1,22 @@
 {
+    "ref_classes": {
+        "ax::": [
+            "Director",
+            "FileUtils",
+            "Node",
+            "Sprite"
+        ]
+    },
+    "non_ref_classes": {
+        "ax::": ["Vec2", "Vec3", "Vec4", "Rect", "Mat4", "Quaternion", "PolygonInfo"]
+    },
     "skip_members": {
         "ax::": {
             "Application": ["applicationScreenSizeChanged"],
             "GLViewImpl": ["loadGLES2"]
         }
+    },
+    "custorm_lua_class_info": {
+        "ax::": ["Node"]
     }
 }

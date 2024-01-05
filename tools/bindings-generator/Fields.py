@@ -85,7 +85,7 @@ class NativeFunction(object):
         if self.isNotSupported:
             return
         
-        ret = ['---@field %s fun(self: %s' % (self.name, self.cls.luaClassName)]
+        ret = ['---@field %s fun(self: %s' % (self.lua_func_name, self.cls.luaClassName)]
 
         for i in range(self.min_args):
             ret.append(', %s: %s' % (self.argumtntTips[i] or 'p%d' % i, self.arguments[i].luaType))
