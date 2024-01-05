@@ -7,7 +7,14 @@ NS_AX_BEGIN
 
 void tolua_push_value(lua_State* L, const Data& value)
 {
-    lua_pushlstring(L, (const char*)value.getBytes(), value.getSize());
+    if (value.isNull())
+    {
+        lua_pushnil(L);
+    }
+    else
+    {
+        lua_pushlstring(L, (const char*)value.getBytes(), value.getSize());
+    }
 }
 
 void tolua_get_value(lua_State* L, int loc, Data& value)
@@ -17,6 +24,10 @@ void tolua_get_value(lua_State* L, int loc, Data& value)
     if (s)
     {
         value.copy((const unsigned char*)s, len);
+    }
+    else
+    {
+        value.clear();
     }
 }
 
