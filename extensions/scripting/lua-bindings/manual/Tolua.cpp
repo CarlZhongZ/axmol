@@ -8,47 +8,15 @@ extern "C" {
 
 #include "axmol.h"
 
-#if (AX_TARGET_PLATFORM == AX_PLATFORM_IOS || AX_TARGET_PLATFORM == AX_PLATFORM_MAC)
-#    include "scripting/lua-bindings/manual/platform/ios/LuaObjcBridge.h"
-#endif
 
-#if (AX_TARGET_PLATFORM == AX_PLATFORM_ANDROID)
-#    include "scripting/lua-bindings/manual/platform/android/LuaJavaBridge.h"
-#endif
 
+#include "lua_module_register.h"
 
 NS_AX_BEGIN
 
 lua_State* Tolua::_state = nullptr;
 std::unordered_map<uintptr_t, int> Tolua::_pushValues;
 std::unordered_map<uintptr_t, const char*> Tolua::luaType;
-
-static int get_string_for_print(lua_State* L, std::string* out)
-{
-    int n = lua_gettop(L); /* number of arguments */
-    for (int i = 1; i <= n; i++)
-    {
-        size_t sz;
-        const char* s = lua_tolstring(L, -1, &sz); /* get result */
-        if (s)
-        {
-            if (i > 1)
-                out->append("\t");
-            out->append(s, sz);
-        }
-    }
-    return 0;
-}
-
-
-static int lua_release_print(lua_State* L)
-{
-    std::string t;
-    get_string_for_print(L, &t);
-    ax::print("[LUA-print] %s", t.c_str());
-
-    return 0;
-}
 
 void Tolua::init() {
     if (_state)
@@ -58,23 +26,12 @@ void Tolua::init() {
 
     _state = luaL_newstate();
     luaL_openlibs(_state);
-
-    lua_register(_state, "print", lua_release_print);
-    lua_register(_state, "release_print", lua_release_print);
-
+    lua_module_register(_state);
 
     lua_register(_state, "tolua_on_restart", [](lua_State* L) {
         _pushValues.clear();
         return 0;
     });
-
-#if (AX_TARGET_PLATFORM == AX_PLATFORM_IOS || AX_TARGET_PLATFORM == AX_PLATFORM_MAC)
-    LuaObjcBridge::luaopen_luaoc(_state);
-#endif
-
-#if (AX_TARGET_PLATFORM == AX_PLATFORM_ANDROID)
-    LuaJavaBridge::luaopen_luaj(_state);
-#endif
 
     registerAutoCode();
 }

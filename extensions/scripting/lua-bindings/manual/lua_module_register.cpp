@@ -22,12 +22,46 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
  ****************************************************************************/
+#include "scripting/lua-bindings/manual/lua_module_register.h"
+#include "axmol.h"
 #include "lua.hpp"
 
-#include "scripting/lua-bindings/manual/lua_module_register.h"
+#if (AX_TARGET_PLATFORM == AX_PLATFORM_IOS || AX_TARGET_PLATFORM == AX_PLATFORM_MAC)
+#    include "scripting/lua-bindings/manual/platform/ios/LuaObjcBridge.h"
+#endif
+
+#if (AX_TARGET_PLATFORM == AX_PLATFORM_ANDROID)
+#    include "scripting/lua-bindings/manual/platform/android/LuaJavaBridge.h"
+#endif
 
 #include "lua_cjson.h"
 #include "yasio/bindings/yasio_axlua.hpp"
+
+static int get_string_for_print(lua_State* L, std::string* out)
+{
+    int n = lua_gettop(L); /* number of arguments */
+    for (int i = 1; i <= n; i++)
+    {
+        size_t sz;
+        const char* s = lua_tolstring(L, -1, &sz); /* get result */
+        if (s)
+        {
+            if (i > 1)
+                out->append("\t");
+            out->append(s, sz);
+        }
+    }
+    return 0;
+}
+
+static int lua_release_print(lua_State* L)
+{
+    std::string t;
+    get_string_for_print(L, &t);
+    ax::print("[LUA-print] %s", t.c_str());
+
+    return 0;
+}
 
 static void lua_register_extensions(lua_State* L)
 {
@@ -47,6 +81,16 @@ static void lua_register_extensions(lua_State* L)
 
 int lua_module_register(lua_State* L)
 {
+    lua_register(L, "print", lua_release_print);
+    lua_register(L, "release_print", lua_release_print);
+
+#if (AX_TARGET_PLATFORM == AX_PLATFORM_IOS || AX_TARGET_PLATFORM == AX_PLATFORM_MAC)
+    LuaObjcBridge::luaopen_luaoc(L);
+#endif
+
+#if (AX_TARGET_PLATFORM == AX_PLATFORM_ANDROID)
+    LuaJavaBridge::luaopen_luaj(L);
+#endif
 
     // register extensions: yaiso, lua-cjson
     lua_register_extensions(L);
