@@ -10,7 +10,7 @@ extern "C" {
 
 NS_AX_BEGIN
 
-#define TOLUA_TYPE_NAME(obj) typeid(*obj).name()
+#define TOLUA_TYPE_NAME(obj) obj?typeid(*obj).name():nullptr
 
 class Tolua
 {

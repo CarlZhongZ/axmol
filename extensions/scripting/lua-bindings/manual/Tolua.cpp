@@ -290,6 +290,7 @@ void Tolua::execute_file(const std::string& path) {
         return;
     }
 
+    lua_pushnil(_state);  // errorFun
     int r = luaL_loadbuffer(_state, (const char*)data.getBytes(), data.getSize(), path.c_str());
     if (r)
     {

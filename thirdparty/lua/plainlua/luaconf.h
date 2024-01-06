@@ -334,6 +334,10 @@
 ** You can define it to get all options, or change specific options
 ** to fit your specific needs.
 */
+#ifndef LUA_COMPAT_5_3
+#    define LUA_COMPAT_5_3
+#endif
+
 #if defined(LUA_COMPAT_5_3)	/* { */
 
 /*

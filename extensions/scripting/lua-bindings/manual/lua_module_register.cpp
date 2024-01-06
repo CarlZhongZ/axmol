@@ -242,9 +242,10 @@ static void lua_register_extensions(lua_State* L)
 {
 
     static luaL_Reg lua_exts[] = {
-        {"cjson", luaopen_cjson}, {NULL, NULL},
+        {"cjson", luaopen_cjson},
         {"socket.core", luaopen_socket_core},
         {"mime.core", luaopen_mime_core},
+        {NULL, NULL},
     };
 
     lua_getglobal(L, "package");

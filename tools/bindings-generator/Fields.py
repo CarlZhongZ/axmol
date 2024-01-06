@@ -98,7 +98,11 @@ class NativeFunction(object):
         for i in range(self.min_args, len(self.arguments)):
             ret.append(', %s?: %s' % (self.argumtntTips[i] or 'p%d' % i, self.arguments[i].luaType))
         ret.append('): ')
-        ret.append(self.ret_type.luaType)
+
+        if self.is_constructor:
+            ret.append(self.cls.luaClassName)
+        else:
+            ret.append(self.ret_type.luaType)
 
         return ''.join(ret)
 
