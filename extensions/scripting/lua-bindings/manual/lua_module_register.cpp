@@ -29,8 +29,12 @@
 #include "lua.hpp"
 
 extern "C" {
-   #include "lua_cjson.h"
+#include "lua_cjson.h"
+#include "luasocket/luasocket.h"
+#include "luasocket/luasocket_scripts.h"
+#include "luasocket/mime.h"
 }
+
 
 
 #include "axmol.h"
@@ -237,7 +241,11 @@ static int luaext_create_table(lua_State* L)
 static void lua_register_extensions(lua_State* L)
 {
 
-    static luaL_Reg lua_exts[] = {{"cjson", luaopen_cjson}, {NULL, NULL}};
+    static luaL_Reg lua_exts[] = {
+        {"cjson", luaopen_cjson}, {NULL, NULL},
+        {"socket.core", luaopen_socket_core},
+        {"mime.core", luaopen_mime_core},
+    };
 
     lua_getglobal(L, "package");
     lua_getfield(L, -1, "preload");
@@ -276,7 +284,6 @@ int lua_module_register(lua_State* L)
     LuaJavaBridge::luaopen_luaj(L);
 #endif
 
-    // register extensions: yaiso, lua-cjson
     lua_register_extensions(L);
     return 1;
 }

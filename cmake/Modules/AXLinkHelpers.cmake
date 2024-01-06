@@ -82,10 +82,8 @@ function(ax_link_cxx_prebuilt APP_NAME AX_ROOT_DIR AX_PREBUILT_DIR)
         PRIVATE ${AX_ROOT_DIR}/thirdparty/unzip/.
         PRIVATE ${AX_ROOT_DIR}/thirdparty/llhttp/include
         PRIVATE ${AX_ROOT_DIR}/thirdparty/lua/plainlua
-        PRIVATE ${AX_ROOT_DIR}/thirdparty/lua/lua-cjson/.
-        PRIVATE ${AX_ROOT_DIR}/extensions/cocostudio
+        PRIVATE ${AX_ROOT_DIR}/thirdparty/lua
         PRIVATE ${AX_ROOT_DIR}/extensions/spine/runtime/include
-        PRIVATE ${AX_ROOT_DIR}/extensions/fairygui
         PRIVATE ${AX_ROOT_DIR}/extensions/GUI
         PRIVATE ${AX_ROOT_DIR}/thirdparty/zlib/_d/include
         PRIVATE ${AX_ROOT_DIR}/thirdparty/jpeg-turbo/_d/include
@@ -114,7 +112,6 @@ function(ax_link_cxx_prebuilt APP_NAME AX_ROOT_DIR AX_PREBUILT_DIR)
         spine
         particle3d
         assets-manager
-        cocostudio
         DragonBones
         axmol
         box2d
@@ -185,7 +182,6 @@ function(ax_link_cxx_prebuilt APP_NAME AX_ROOT_DIR AX_PREBUILT_DIR)
                 "${AX_ROOT_DIR}/${AX_PREBUILT_DIR}/bin/${BUILD_CONFIG_DIR}pugixml.dll"
                 "${AX_ROOT_DIR}/${AX_PREBUILT_DIR}/bin/${BUILD_CONFIG_DIR}freetype.dll"
                 "${AX_ROOT_DIR}/${AX_PREBUILT_DIR}/bin/${BUILD_CONFIG_DIR}axmol.dll"
-                "${AX_ROOT_DIR}/${AX_PREBUILT_DIR}/bin/${BUILD_CONFIG_DIR}cocostudio.dll"
                 "${AX_ROOT_DIR}/${AX_PREBUILT_DIR}/bin/${BUILD_CONFIG_DIR}GUI.dll"
                 "${AX_ROOT_DIR}/${AX_PREBUILT_DIR}/bin/${BUILD_CONFIG_DIR}particle3d.dll"
                 "${AX_ROOT_DIR}/${AX_PREBUILT_DIR}/bin/${BUILD_CONFIG_DIR}physics-nodes.dll"
@@ -231,7 +227,7 @@ function(ax_link_lua_prebuilt APP_NAME AX_ROOT_DIR AX_PREBUILT_DIR)
 	        PRIVATE _USRLUASTATIC=1
         )
     endif()
-    target_link_libraries(${APP_NAME} axlua lua-cjson plainlua)
+    target_link_libraries(${APP_NAME} axlua lua-cjson plainlua luasocket)
 
     ax_link_cxx_prebuilt(${APP_NAME} ${AX_ROOT_DIR} ${AX_PREBUILT_DIR})
 
