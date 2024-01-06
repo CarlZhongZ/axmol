@@ -274,7 +274,7 @@ void Tolua::removeRefObject(void* obj)
 
     // 从 __TOLUA_PUSH_DATA 移除
     lua_pushnil(_state);
-    lua_seti(_state, -1, it->second);
+    lua_seti(_state, -2, it->second);
     _pushValues.erase(it);
 
     lua_pop(_state, 1);
