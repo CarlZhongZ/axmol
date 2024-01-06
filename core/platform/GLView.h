@@ -41,6 +41,33 @@ THE SOFTWARE.
 #    define AX_ICON_SET_SUPPORT true
 #endif /* (AX_TARGET_PLATFORM == AX_PLATFORM_WIN32) || (AX_TARGET_PLATFORM == AX_PLATFORM_LINUX) */
 
+/** @struct GLContextAttrs
+ *
+ * There are six opengl Context Attrs.
+ */
+struct GLContextAttrs
+{
+    int redBits;
+    int greenBits;
+    int blueBits;
+    int alphaBits;
+    int depthBits;
+    int stencilBits;
+    int multisamplingCount;
+    bool visible   = true;
+    bool decorated = true;
+    bool vsync       = false;
+#if defined(_WIN32)
+    void* viewParent = nullptr;
+#endif
+};
+
+NS_AX_BEGIN
+
+class Scene;
+class Renderer;
+class Director;
+
 /** There are some Resolution Policy for Adapt to the screen. */
 enum class ResolutionPolicy
 {
@@ -71,33 +98,6 @@ enum class ResolutionPolicy
 
     UNKNOWN,
 };
-
-/** @struct GLContextAttrs
- *
- * There are six opengl Context Attrs.
- */
-struct GLContextAttrs
-{
-    int redBits;
-    int greenBits;
-    int blueBits;
-    int alphaBits;
-    int depthBits;
-    int stencilBits;
-    int multisamplingCount;
-    bool visible   = true;
-    bool decorated = true;
-    bool vsync       = false;
-#if defined(_WIN32)
-    void* viewParent = nullptr;
-#endif
-};
-
-NS_AX_BEGIN
-
-class Scene;
-class Renderer;
-class Director;
 
 /**
  * @addtogroup platform

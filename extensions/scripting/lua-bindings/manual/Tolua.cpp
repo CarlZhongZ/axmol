@@ -197,7 +197,7 @@ void Tolua::pushType(lua_State* L, void* obj, const char* name)
     lua_setmetatable(L, -2);  // ud
 }
 
-void Tolua::pushRefType(lua_State* L, void* obj)
+void Tolua::pushRefType(lua_State* L, void* obj, const char* typeName, const char* curName)
 {
     if (!obj)
     {
@@ -205,13 +205,8 @@ void Tolua::pushRefType(lua_State* L, void* obj)
         return;
     }
 
-    auto itType = luaType.find((uintptr_t) typeid(obj).name());
-    if (itType == luaType.end())
-    {
-        lua_pushnil(L);
-        return;
-    }
-    const char* name = itType->second;
+    auto itType = luaType.find((uintptr_t)typeName);
+    const char* name = itType == luaType.end() ? curName: itType->second;
 
     auto hashKey = (uintptr_t)obj;
     auto it = _pushValues.find(hashKey);
@@ -289,13 +284,13 @@ void Tolua::removeRefObject(void* obj)
 
 void Tolua::execute_file(const std::string& path) {
     auto data = FileUtils::getInstance()->getDataFromFile(path);
-    execute_string((const char*)data.getBytes(), path);
-}
+    if (data.isNull())
+    {
+        AXLOG("error: %s not exist", path.c_str());
+        return;
+    }
 
-void Tolua::execute_string(const std::string& code, const std::string& path)
-{
-    lua_pushnil(_state);
-    int r = luaL_loadbuffer(_state, code.c_str(), code.size(), path.c_str());
+    int r = luaL_loadbuffer(_state, (const char*)data.getBytes(), data.getSize(), path.c_str());
     if (r)
     {
         AXLOG("error: %s", lua_tostring(_state, -1));

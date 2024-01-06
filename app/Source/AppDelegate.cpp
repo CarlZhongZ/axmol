@@ -27,7 +27,6 @@
 #include "scripting/lua-bindings/manual/LuaEngine.h"
 #include "scripting/lua-bindings/manual/Tolua.h"
 #include "cocos2d.h"
-#include "scripting/lua-bindings/manual/lua_module_register.h"
 
 #define USE_AUDIO_ENGINE 1
 
@@ -57,10 +56,9 @@ bool AppDelegate::applicationDidFinishLaunching()
     // set default FPS
     Director::getInstance()->setAnimationInterval(1.0 / 60.0f);
 
-    // register lua module
     ScriptEngineManager::getInstance()->setScriptEngine(LuaEngine::getInstance());
-    lua_module_register(Tolua::getLuaState());
 
+    FileUtils::getInstance()->addSearchPath("Content");
     Tolua::execute_file("src/main.lua");
 
     return true;

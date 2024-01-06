@@ -20,6 +20,15 @@ parsedClasses = {}
 # 只会导出 ns_map 记录的命名空间中的类
 ns_map = parseConfig['ns_map']
 
+def getLuaGlobalVarNames():
+    ret = []
+    for _, v in ns_map:
+        vv = v[:-1]
+        if vv not in ret:
+            ret.append(vv)
+
+    return ret
+
 def nsNameToLuaName(namespace_name):
     for ns, luaName in ns_map:
         if namespace_name.startswith(ns):

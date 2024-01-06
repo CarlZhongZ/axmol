@@ -27,7 +27,11 @@
 #include <regex>
 
 #include "lua.hpp"
-#include "lua_cjson.h"
+
+extern "C" {
+   #include "lua_cjson.h"
+}
+
 
 #include "axmol.h"
 

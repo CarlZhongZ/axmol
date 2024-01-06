@@ -50,7 +50,11 @@ class NativeClass(object):
 
         skipMethods = info.get(self.class_name)
         if skipMethods:
-            return name in skipMethods
+            if name in skipMethods:
+                return True
+            for reName in skipMethods:
+                if re.match(reName, name):
+                    return True
 
         return False
 

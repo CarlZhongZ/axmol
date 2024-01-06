@@ -1,17 +1,17 @@
 {
     "ns_map": [
-        ["ax::experimental::ui::", "axexp."],
-        ["ax::experimental::", "axexp."],
-        ["ax::extension::", "ax."],
-        ["ax::tweenfunc::", "ax."],
-        ["ax::backend::", "axb."],
-        ["ax::ui::", "axui."],
-        ["ax::", "ax."],
+        ["ax::backend::", "ccb."],
+        ["ax::ui::", "ccui."],
+        ["ax::", "cc."],
         ["spine::", "sp."]
     ],
     "ref_classes": {
         "ax::": [
             "Director",
+            "Scheduler",
+            "EventDispatcher",
+            "TextureCache",
+            "SpriteFrameCache",
             "FileUtils",
             "Node",
             "Sprite"
@@ -22,6 +22,7 @@
     },
     "skip_members": {
         "ax::": {
+            "ApplicationProtocol": ["^application.+", "initGLContextAttrs"],
             "Application": ["applicationScreenSizeChanged"],
             "GLViewImpl": ["loadGLES2"]
         }

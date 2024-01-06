@@ -10,6 +10,8 @@ extern "C" {
 
 NS_AX_BEGIN
 
+#define TOLUA_TYPE_NAME(obj) typeid(*obj).name()
+
 class Tolua
 {
     static lua_State* _state;
@@ -31,7 +33,6 @@ public:
     static void removeRefObject(void* obj);
 
     static void execute_file(const std::string& path);
-    static void execute_string(const std::string& code, const std::string& path);
 
     // call stack: __trackback fun args...
     static int call(lua_State* L, int numArgs, int nRet);
@@ -40,7 +41,7 @@ public:
     static bool isType(lua_State* L, const char* name, int lo);
     static void* toType(lua_State* L, const char* name, int lo);
     static void pushType(lua_State* L, void* obj, const char* name);
-    static void pushRefType(lua_State* L, void* obj);
+    static void pushRefType(lua_State* L, void* obj, const char* typeName, const char* curName);
 };
 
 NS_AX_END

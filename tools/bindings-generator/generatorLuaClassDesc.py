@@ -163,9 +163,10 @@ class Generator(object):
 
         classTypes = self.sorted_classes()
 
-        f = open(os.path.abspath("../../app/Content/src/framework/declare_types/engine_types.lua"), "wt+", encoding='utf8', newline='\n')
+        f = open(os.path.abspath("../../app/Content/src/framework/declare_types/auto/engine_types.lua"), "wt+", encoding='utf8', newline='\n')
         f.write(str(Template(file='configs/engine_types.lua.tmpl',
                                     searchList=[{
+                                        'luaGlobalVars': ConvertUtils.getLuaGlobalVarNames(),
                                         'enumTypes': enumTypes,
                                         'parsedEnums' :parsedEnums,
                                         'structTypes': structTypes,
@@ -174,7 +175,7 @@ class Generator(object):
                                         'parsedClasses': parsedClasses,
                                     }])))
 
-        fEnum = open(os.path.abspath("../../app/Content/src/framework/declare_types/engine_enums.lua"), "wt+", encoding='utf8', newline='\n')
+        fEnum = open(os.path.abspath("../../app/Content/src/framework/declare_types/auto/engine_enums.lua"), "wt+", encoding='utf8', newline='\n')
         fEnum.write(str(Template(file='configs/engine_enums.lua.tmpl',
                                     searchList=[{
                                         'enumTypes': enumTypes,

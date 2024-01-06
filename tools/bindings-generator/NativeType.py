@@ -302,7 +302,7 @@ class NativeType(object):
         if self.is_numeric:
             return 'number'
         elif self.is_string:
-            return 'string'
+            return 'String'
         elif self.is_boolean:
             return 'boolean'
         elif self.is_void:
@@ -482,9 +482,8 @@ class NativeType(object):
             return 'lua_pushstring(L, %s);' % (varName, )
         elif self.is_class:
             if self.isRefClass:
-                if self.is_pointer != 1:
-                    print(f'error~~~ {self.is_pointer} {self.is_reference} {self.ns_full_name}')
-                return 'Tolua::pushRefType(L, (void*)%s);' % (varName, )
+                assert(self.is_pointer == 1)
+                return 'Tolua::pushRefType(L, (void*)%s, TOLUA_TYPE_NAME(%s), "%s");' % (varName, varName, self.luaType)
             else:
                 if bIsCppType and self.is_pointer == 0:
                     return 'Tolua::pushType(L, (void*)new %s(%s), "%s");' % (self.ns_full_name, varName, self.luaType)
