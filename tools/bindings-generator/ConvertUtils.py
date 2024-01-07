@@ -7,6 +7,7 @@ import inspect
 import traceback
 import json
 from Cheetah.Template import Template
+from NativeType import NativeType
 
 with open('configs/parse_config.json', 'r') as f:
     parseConfig = json.loads(f.read())
@@ -48,35 +49,34 @@ def transTypeNameToLua(nameSpaceTypeName):
             return nameSpaceTypeName.replace(k, v).replace("::", ".")
     return nameSpaceTypeName.replace("::", ".")
 
-default_arg_type_arr = [
+default_arg_type_arr = set([
+    # An integer literal.
+    cindex.CursorKind.INTEGER_LITERAL,
 
-# An integer literal.
-cindex.CursorKind.INTEGER_LITERAL,
+    # A floating point number literal.
+    cindex.CursorKind.FLOATING_LITERAL,
 
-# A floating point number literal.
-cindex.CursorKind.FLOATING_LITERAL,
+    # An imaginary number literal.
+    cindex.CursorKind.IMAGINARY_LITERAL,
 
-# An imaginary number literal.
-cindex.CursorKind.IMAGINARY_LITERAL,
+    # A string literal.
+    cindex.CursorKind.STRING_LITERAL,
 
-# A string literal.
-cindex.CursorKind.STRING_LITERAL,
+    # A character literal.
+    cindex.CursorKind.CHARACTER_LITERAL,
 
-# A character literal.
-cindex.CursorKind.CHARACTER_LITERAL,
+    # [C++ 2.13.5] C++ Boolean Literal.
+    cindex.CursorKind.CXX_BOOL_LITERAL_EXPR,
 
-# [C++ 2.13.5] C++ Boolean Literal.
-cindex.CursorKind.CXX_BOOL_LITERAL_EXPR,
+    # [C++0x 2.14.7] C++ Pointer Literal.
+    cindex.CursorKind.CXX_NULL_PTR_LITERAL_EXPR,
 
-# [C++0x 2.14.7] C++ Pointer Literal.
-cindex.CursorKind.CXX_NULL_PTR_LITERAL_EXPR,
+    cindex.CursorKind.GNU_NULL_EXPR,
 
-cindex.CursorKind.GNU_NULL_EXPR,
-
-# An expression that refers to some value declaration, such as a function,
-# varible, or enumerator.
-cindex.CursorKind.DECL_REF_EXPR
-]
+    # An expression that refers to some value declaration, such as a function,
+    # varible, or enumerator.
+    cindex.CursorKind.DECL_REF_EXPR
+])
 
 class BaseEnumeration(object):
     """
@@ -221,3 +221,28 @@ def isValidDefinition(cursor):
     for _ in iter:
         return True
     return False
+
+
+notUsedClassMemberCursorKind = set([
+    cindex.CursorKind.DESTRUCTOR, 
+    cindex.CursorKind.FRIEND_DECL, 
+    cindex.CursorKind.TYPEDEF_DECL, 
+    cindex.CursorKind.FUNCTION_TEMPLATE, 
+    cindex.CursorKind.USING_DECLARATION, 
+    cindex.CursorKind.TYPE_ALIAS_DECL
+    ])
+# def parseClass(cursor):
+
+
+def parseCuorsor(cursor):
+    print('parsing cursor', get_namespaced_name(cursor))
+
+    def _parse(node, level):
+        tp = NativeType.from_type(node.type)
+        print(level, node.kind, node.spelling, node.displayname, tp.ns_full_name)
+        for node in node.get_children():
+            _parse(node, level + 1)
+
+    _parse(cursor, 0)
+
+    print('parsing cursor end')

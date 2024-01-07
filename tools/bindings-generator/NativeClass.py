@@ -147,48 +147,56 @@ class NativeClass(object):
                     ConvertUtils.parsedClasses[parentNSName] = NativeClass(parent, self.generator)
 
                 self.parents.append(ConvertUtils.parsedClasses[parentNSName])
-        elif cursor.kind == cindex.CursorKind.FIELD_DECL:
-            if self._current_visibility == cindex.AccessSpecifier.PUBLIC and NativeField.can_parse(cursor.type) and not self._shouldSkip(cursor.spelling):
-                self.public_fields.append(NativeField(cursor))
         elif cursor.kind == cindex.CursorKind.CXX_ACCESS_SPEC_DECL:
             self._current_visibility = cursor.access_specifier
-        elif cursor.kind == cindex.CursorKind.CXX_METHOD and ConvertUtils.get_availability(cursor) != ConvertUtils.AvailabilityKind.DEPRECATED:
-            # skip if variadic
-            if self._current_visibility == cindex.AccessSpecifier.PUBLIC and not cursor.type.is_function_variadic() and not self._shouldSkip(cursor.spelling):
-                m = NativeFunction(cursor, self, False)
-                if m.is_override:
-                    if NativeClass._is_method_in_parents(self, m.name):
-                        return
+        elif self._current_visibility == cindex.AccessSpecifier.PUBLIC:
+            if cursor.kind == cindex.CursorKind.FIELD_DECL:
+                if NativeField.can_parse(cursor.type) and not self._shouldSkip(cursor.spelling):
+                    self.public_fields.append(NativeField(cursor))
+            elif cursor.kind == cindex.CursorKind.CXX_METHOD:
+                # skip if variadic
+                if ConvertUtils.get_availability(cursor) != ConvertUtils.AvailabilityKind.DEPRECATED and not cursor.type.is_function_variadic() and not self._shouldSkip(cursor.spelling):
+                    m = NativeFunction(cursor, self, False)
+                    if m.is_override:
+                        if NativeClass._is_method_in_parents(self, m.name):
+                            return
 
-                if m.static:
-                    for mm in self.static_methods:
-                        if mm.isEqual(m):
-                            return
-                    self.static_methods.append(m)
-                else:
-                    for mm in self.methods:
-                        if mm.isEqual(m):
-                            return
-                    self.methods.append(m)
-        elif self._current_visibility == cindex.AccessSpecifier.PUBLIC and cursor.kind == cindex.CursorKind.CONSTRUCTOR:
-            # Skip copy constructor
-            if cursor.displayname != self.class_name + "(const " + self.ns_full_name + " &)":
-                self.constructors.append(NativeFunction(cursor, self, True))
-        elif self._current_visibility == cindex.AccessSpecifier.PUBLIC and cursor.kind == cindex.CursorKind.CLASS_DECL:
-            if ConvertUtils.isValidDefinition(cursor):
-                nsName = ConvertUtils.get_namespaced_name(cursor)
-                if self.generator.in_listed_classes(nsName) and nsName not in ConvertUtils.parsedClasses:
-                    ConvertUtils.parsedClasses[nsName] = NativeClass(cursor, self.generator)
-        elif self._current_visibility == cindex.AccessSpecifier.PUBLIC and cursor.kind == cindex.CursorKind.STRUCT_DECL:
-            if ConvertUtils.isValidDefinition(cursor):
-                nsName = ConvertUtils.get_namespaced_name(cursor)
-                if nsName not in ConvertUtils.parsedStructs:
-                    ConvertUtils.parsedStructs[nsName] = NativeStruct(cursor)
-        elif self._current_visibility == cindex.AccessSpecifier.PUBLIC and cursor.kind == cindex.CursorKind.ENUM_DECL:
-            if ConvertUtils.isValidDefinition(cursor):
-                nsName = ConvertUtils.get_namespaced_name(cursor)
-                if nsName not in ConvertUtils.parsedEnums:
-                    ConvertUtils.parsedEnums[nsName] = NativeEnum(cursor)
+                    if m.static:
+                        for mm in self.static_methods:
+                            if mm.isEqual(m):
+                                return
+                        self.static_methods.append(m)
+                    else:
+                        for mm in self.methods:
+                            if mm.isEqual(m):
+                                return
+                        self.methods.append(m)
+            elif cursor.kind == cindex.CursorKind.CONSTRUCTOR:
+                if not cursor.is_copy_constructor() and not cursor.is_move_constructor():
+                    self.constructors.append(NativeFunction(cursor, self, True))
+            elif cursor.kind == cindex.CursorKind.CLASS_DECL:
+                if ConvertUtils.isValidDefinition(cursor):
+                    nsName = ConvertUtils.get_namespaced_name(cursor)
+                    if self.generator.in_listed_classes(nsName) and nsName not in ConvertUtils.parsedClasses:
+                        ConvertUtils.parsedClasses[nsName] = NativeClass(cursor, self.generator)
+            elif cursor.kind == cindex.CursorKind.STRUCT_DECL:
+                if ConvertUtils.isValidDefinition(cursor):
+                    nsName = ConvertUtils.get_namespaced_name(cursor)
+                    if nsName not in ConvertUtils.parsedStructs:
+                        ConvertUtils.parsedStructs[nsName] = NativeStruct(cursor)
+            elif cursor.kind == cindex.CursorKind.ENUM_DECL:
+                if ConvertUtils.isValidDefinition(cursor):
+                    nsName = ConvertUtils.get_namespaced_name(cursor)
+                    if nsName not in ConvertUtils.parsedEnums:
+                        ConvertUtils.parsedEnums[nsName] = NativeEnum(cursor)
+            elif cursor.kind == cindex.CursorKind.UNION_DECL:
+                ConvertUtils.parseCuorsor(cursor)
+            elif cursor.kind == cindex.CursorKind.VAR_DECL:
+                # class static var
+                # ax::Vec2::ONE
+                pass
+            elif cursor.kind not in ConvertUtils.notUsedClassMemberCursorKind:
+                print('@@@@@@@ error unhandled public type', cursor.kind, ConvertUtils.get_namespaced_name(cursor))
 
     def testUseTypes(self, useTypes):
         for field in self.public_fields:
