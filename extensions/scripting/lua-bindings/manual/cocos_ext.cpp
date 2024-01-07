@@ -1,6 +1,6 @@
 #include"cocos2d.h"
-#include "scripting/lua-bindings/manual/LuaEngine.h"
-//#include "scripting/lua-bindings/auto/tolua_auto_convert.h"
+#include "scripting/lua-bindings/manual/Tolua.h"
+#include "scripting/lua-bindings/auto/tolua_auto_convert.h"
 
 #include <regex>
 #include<iostream>
@@ -8,38 +8,22 @@
 using namespace std;
 using namespace ax;
 
-
-static string format(const char *fmt, ...) {
-	va_list args, args1;
-	va_start(args, fmt);
-	va_copy(args1, args);
-
-	string res(1 + vsnprintf(nullptr, 0, fmt, args1), 0);
-	va_end(args1);
-
-	vsnprintf(&res[0], res.size(), fmt, args);
-	va_end(args);
-
-	return res;
-}
-
-
 ////////////////////////////////////////////////////////////////////////////////////////
 static int ccc3FromHex(lua_State *L) {
-	//int n = luaL_checkinteger(L, 1);
-	//GLubyte r = n >> 16 & 0xff;
-	//GLubyte g = n >> 8 & 0xff;
-	//GLubyte b = n & 0xff;
-	//tolua_push_value(L, Color3B(r, g, b));
+	int n = luaL_checkinteger(L, 1);
+	GLubyte r = n >> 16 & 0xff;
+	GLubyte g = n >> 8 & 0xff;
+	GLubyte b = n & 0xff;
+	tolua_push_value(L, Color3B(r, g, b));
 	return 1;
 }
 
 static int ccc4FromHex(lua_State *L) {
-	//int n = luaL_checkinteger(L, 1);
-	//GLubyte r = n >> 16 & 0xff;
-	//GLubyte g = n >> 8 & 0xff;
-	//GLubyte b = n & 0xff;
-	//tolua_push_value(L, Color4B(r, g, b, 0xff));
+	int n = luaL_checkinteger(L, 1);
+	GLubyte r = n >> 16 & 0xff;
+	GLubyte g = n >> 8 & 0xff;
+	GLubyte b = n & 0xff;
+	tolua_push_value(L, Color4B(r, g, b, 0xff));
 	return 1;
 }
 
@@ -53,23 +37,23 @@ static float s_xRate = 1.0f;
 static float s_yRate = 1.0f;
 
 static int ccext_update_design_resolution(lua_State *L) {
-	//s_winSize = Director::getInstance()->getWinSize();
-	//if (lua_gettop(L) != 4) {
-	//	log("ccext_update_design_resolution params not valid");
-	//	return 0;
-	//}
-	//if (lua_isnumber(L, 1)) {
-	//	s_winSize.width = lua_tonumber(L, 1);
-	//}
-	//if (lua_isnumber(L, 2)) {
-	//	s_winSize.height = lua_tonumber(L, 2);
-	//}
-	//s_designWidth = luaL_checknumber(L, 3);
-	//s_designHeight = luaL_checknumber(L, 4);
-	//s_minRate = MIN(s_winSize.width / s_designWidth, s_winSize.height / s_designHeight);
-	//s_maxRate = MAX(s_winSize.width / s_designWidth, s_winSize.height / s_designHeight);
-	//s_xRate = s_winSize.width / s_designWidth;
-	//s_yRate = s_winSize.height / s_designHeight;
+	s_winSize = Director::getInstance()->getWinSize();
+	if (lua_gettop(L) != 4) {
+		log("ccext_update_design_resolution params not valid");
+		return 0;
+	}
+	if (lua_isnumber(L, 1)) {
+		s_winSize.width = lua_tonumber(L, 1);
+	}
+	if (lua_isnumber(L, 2)) {
+		s_winSize.height = lua_tonumber(L, 2);
+	}
+	s_designWidth = luaL_checknumber(L, 3);
+	s_designHeight = luaL_checknumber(L, 4);
+	s_minRate = MIN(s_winSize.width / s_designWidth, s_winSize.height / s_designHeight);
+	s_maxRate = MAX(s_winSize.width / s_designWidth, s_winSize.height / s_designHeight);
+	s_xRate = s_winSize.width / s_designWidth;
+	s_yRate = s_winSize.height / s_designHeight;
 	return 0;
 }
 
@@ -80,7 +64,7 @@ static int ccext_get_designed_size(lua_State *L) {
 }
 
 static int ccext_get_scale(lua_State *L) {
-	/*if (lua_isnumber(L, 1)) {
+	if (lua_isnumber(L, 1)) {
 		lua_pushvalue(L, 1);
 		return 1;
 	}
@@ -110,7 +94,7 @@ static int ccext_get_scale(lua_State *L) {
 			break;
 		}
 	}
-	lua_pushnumber(L, v);*/
+	lua_pushnumber(L, v);
 	return 1;
 }
 
@@ -159,70 +143,65 @@ static float _calc_pos(const string& pos, float parentLen, float selfScale) {
 
 static int ccext_calc_pos(lua_State *L)
 {
-	//if (lua_isnumber(L, 1)) {
-	//	lua_pushnumber(L, lua_tonumber(L, 1));
-	//}
-	//else {
-	//	string pos = luaL_checkstring(L, 1);
-	//	auto parentLen = luaL_checknumber(L, 2);
-	//	lua_pushnumber(L, _calc_pos(pos, parentLen, lua_gettop(L) == 3?luaL_checknumber(L, 3):1.0f));
-	//}
+	if (lua_isnumber(L, 1)) {
+		lua_pushnumber(L, lua_tonumber(L, 1));
+	}
+	else {
+		string pos = luaL_checkstring(L, 1);
+		auto parentLen = luaL_checknumber(L, 2);
+		lua_pushnumber(L, _calc_pos(pos, parentLen, lua_gettop(L) == 3?luaL_checknumber(L, 3):1.0f));
+	}
 	return 1;
 }
 
 static Node* _calcWH(lua_State *L, float& w, float& h) {
-    Node* cobj = nullptr;
+    auto cobj = (Node*)Tolua::toType(L, "cc.Node", 1);
+    if (!cobj)
+    {
+        return 0;
+    }
 
-	//cobj = (Node*)tolua_tousertype(L, 1, 0);
- //   if (!cobj) 
- //   {
- //       tolua_error(L,"invalid 'cobj' in function '_calcWH'", nullptr);
- //       return 0;
- //   }
+	if (lua_isnumber(L, 2)) {
+		w = lua_tonumber(L, 2);
+	}
+	else {
+		string sw = luaL_checkstring(L, 2);
+		auto parent = cobj->getParent();
+		if (parent) {
+			w = _calc_pos(sw, parent->getContentSize().width, cobj->getScaleX());
+		}
+		else {
+			w = _calc_pos(sw, s_winSize.width, cobj->getScaleX());
+		}
+	}
 
-	//if (lua_isnumber(L, 2)) {
-	//	w = lua_tonumber(L, 2);
-	//}
-	//else {
-	//	string sw = luaL_checkstring(L, 2);
-	//	auto parent = cobj->getParent();
-	//	if (parent) {
-	//		w = _calc_pos(sw, parent->getContentSize().width, cobj->getScaleX());
-	//	}
-	//	else {
-	//		w = _calc_pos(sw, s_winSize.width, cobj->getScaleX());
-	//	}
-	//}
-
-	//if (lua_isnumber(L, 3)) {
-	//	h = lua_tonumber(L, 3);
-	//}
-	//else {
-	//	string sh = luaL_checkstring(L, 3);
-	//	auto parent = cobj->getParent();
-	//	if (parent) {
-	//		h = _calc_pos(sh, parent->getContentSize().height, cobj->getScaleY());
-	//	}
-	//	else {
-	//		h = _calc_pos(sh, s_winSize.height, cobj->getScaleY());
-	//	}
-	//}
-	//return cobj;
-
-	return nullptr;
+	if (lua_isnumber(L, 3)) {
+		h = lua_tonumber(L, 3);
+	}
+	else {
+		string sh = luaL_checkstring(L, 3);
+		auto parent = cobj->getParent();
+		if (parent) {
+			h = _calc_pos(sh, parent->getContentSize().height, cobj->getScaleY());
+		}
+		else {
+			h = _calc_pos(sh, s_winSize.height, cobj->getScaleY());
+		}
+	}
+	return cobj;
 }
 
 static int ccext_node_calc_size(lua_State *L) {
 	Size sz;
 	_calcWH(L, sz.width, sz.height);
-	//tolua_push_value(L, sz);
+    Tolua::pushType(L, &sz, "cc.Vec2");
 	return 1;
 }
 
 static int ccext_node_calc_pos(lua_State *L) {
 	Vec2 p;
 	_calcWH(L, p.x, p.y);
-	//tolua_push_value(L, p);
+    Tolua::pushType(L, &p, "cc.Vec2");
 	return 1;
 }
 
@@ -231,7 +210,7 @@ static int ccext_node_set_content_size(lua_State *L) {
 	auto node = _calcWH(L, sz.width, sz.height);
 	if (node) {
 		node->setContentSize(sz);
-		//tolua_push_value(L, sz);
+        Tolua::pushType(L, &sz, "cc.Vec2");
 		return 1;
 	}
 	else {
@@ -244,7 +223,7 @@ static int ccext_node_set_position(lua_State *L) {
 	auto node = _calcWH(L, p.x, p.y);
 	if (node) {
 		node->setPosition(p);
-		//tolua_push_value(L, p);
+        Tolua::pushType(L, &p, "cc.Vec2");
 		return 1;
 	}
 	else {

@@ -186,10 +186,18 @@ class Generator(object):
                                         'parsedStructs': parsedStructs,
                                         'parsedClasses': parsedClasses,
                                     }])))
-        
-        fAutoConvertCodesH = open(os.path.join(self.outdir, "tolua_auto_convert.h"), "wt+",
+
+        fAutoConvertCodes = open(os.path.join(self.outdir, "tolua_auto_convert.h"), "wt+",
                               encoding='utf8', newline='\n')
-        fAutoConvertCodesH.write(str(Template(file='configs/tolua_auto_convert.h.tmpl',
+        fAutoConvertCodes.write(str(Template(file='configs/tolua_auto_convert.h.tmpl',
+                                    searchList=[self, {
+                                        'structTypes': structTypes,
+                                        'parsedStructs': parsedStructs,
+                                    }])))
+        
+        fAutoConvertCodes = open(os.path.join(self.outdir, "tolua_auto_convert.cpp"), "wt+",
+                              encoding='utf8', newline='\n')
+        fAutoConvertCodes.write(str(Template(file='configs/tolua_auto_convert.cpp.tmpl',
                                     searchList=[self, {
                                         'structTypes': structTypes,
                                         'parsedStructs': parsedStructs,

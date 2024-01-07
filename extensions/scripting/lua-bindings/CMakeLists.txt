@@ -10,8 +10,12 @@ set(lua_bindings_files
     manual/Tolua.h
     manual/Tolua.cpp
     manual/tolua_manual_convert.h
+    manual/tolua_manual_convert.cpp
+    manual/cocos_ext.cpp
+    manual/luaext.cpp
     auto/lua_auto_gen_codes.cpp
     auto/tolua_auto_convert.h
+    auto/tolua_auto_convert.cpp
     )
 
 if(APPLE)
