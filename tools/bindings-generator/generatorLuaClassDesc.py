@@ -75,13 +75,6 @@ class Generator(object):
         # if sys.platform == 'win32' and self.win32_clang_flags != None:
         #     self.clang_args.extend(self.win32_clang_flags)
 
-
-    def should_rename_function(self, class_name, method_name):
-        # 方法名不能为 lua 关键字
-        if method_name == 'end':
-            return 'endToLua'
-        return None
-
     def in_listed_classes(self, nsName):
         if nsName in self.non_ref_classes or nsName in self.ref_classes:
             return True
@@ -206,7 +199,7 @@ class Generator(object):
         for _, cls in parsedClasses.items():
             base = cls.parents[0].ns_full_name if cls.parents else 'None'
             fClassInfo.write(f'\n\n\nclass:{cls.ns_full_name} base:{base} isRefClass:{cls.isRefClass}\n')
-            for _, m in cls.methods.items():
+            for m in cls.methods:
                 fClassInfo.write(f'\t{m.cursor.displayname} {m.isNotSupported}\n')
                 fClassInfo.write('\t')
                 for t in m.arguments:

@@ -46,7 +46,7 @@ $globalVarName = {}
     #for _, m in classInfo.validConstructors.items()
 ${m.luaFieldDesc} @ static method
     #end for
-    #for m in classInfo.validStaticMethods
+    #for _, m in classInfo.validStaticMethods.items()
 ${m.luaFieldDesc} @ static method
     #end for
 
@@ -54,7 +54,7 @@ ${m.luaFieldDesc} @ static method
     #for m in classInfo.validFields
 ${m.luaFieldDesc} @ field
     #end for
-    #for m in classInfo.validMethods
+    #for _, m in classInfo.validMethods.items()
 ${m.luaFieldDesc} @ method
     #end for
 

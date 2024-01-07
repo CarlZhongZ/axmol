@@ -253,6 +253,14 @@ public:
                   bool paused,
                   std::string_view key);
 
+    void schedule(const ccSchedulerFunc& callback,
+                  int target,
+                  float interval,
+                  unsigned int repeat,
+                  float delay,
+                  bool paused,
+                  std::string_view key);
+
     /** The scheduled method will be called every 'interval' seconds for ever.
      @param callback The callback function.
      @param target The target of the callback function.
@@ -315,6 +323,7 @@ public:
      @since v3.0
      */
     void unschedule(std::string_view key, void* target);
+    void unschedule(std::string_view key, int target);
 
     /** Unschedules a selector for a given target.
      If you want to unschedule the "update", use `unscheduleUpdate()`.
@@ -381,6 +390,7 @@ public:
      @since v0.99.3
      */
     void pauseTarget(void* target);
+    void pauseTarget(int target);
 
     /** Resumes the target.
      The 'target' will be unpaused, so all schedule selectors/update will be 'ticked' again.
@@ -389,6 +399,7 @@ public:
      @since v0.99.3
      */
     void resumeTarget(void* target);
+    void resumeTarget(int target);
 
     /** Returns whether or not the target is paused.
      * @param target The target to be checked.
@@ -397,6 +408,7 @@ public:
      * @lua NA
      */
     bool isTargetPaused(void* target);
+    bool isTargetPaused(int target);
 
     /** Pause all selectors from all targets.
       You should NEVER call this method, unless you know what you are doing.

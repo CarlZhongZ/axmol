@@ -115,14 +115,14 @@ $parseFunctionArgs(cls, func)
     #end if  ## cls.hasConstructor
 
     ## methods implementation
-    #for m in cls.validMethods
+    #for _, m in cls.validMethods.items()
 static int ${cls.cppRefName}_${m.lua_func_name}(lua_State* L) {
 $parseFunctionArgs(cls, m)
 }
     #end for
 
     ## static methods implementation
-    #for m in cls.validStaticMethods
+    #for _, m in cls.validStaticMethods.items()
 static int ${cls.cppRefName}_${m.lua_func_name}__static(lua_State* L) {
 $parseFunctionArgs(cls, m)
 }
@@ -184,7 +184,7 @@ void register_${cls.cppRefName}(lua_State* L) {
 ## 
     #if cls.methods
     Tolua::declare_member_type("methods");
-        #for m in cls.validMethods
+        #for _, m in cls.validMethods.items()
     Tolua::add_member("${m.lua_func_name}", ${cls.cppRefName}_${m.lua_func_name});
         #end for
     Tolua::declare_end();
@@ -192,7 +192,7 @@ void register_${cls.cppRefName}(lua_State* L) {
 
     #if cls.static_methods
     Tolua::declare_member_type("static_methods");
-        #for m in cls.validStaticMethods
+        #for _, m in cls.validStaticMethods.items()
     Tolua::add_member("${m.lua_func_name}", ${cls.cppRefName}_${m.lua_func_name}__static);
         #end for
     Tolua::declare_end();

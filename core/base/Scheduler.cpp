@@ -33,6 +33,8 @@ THE SOFTWARE.
 
 NS_AX_BEGIN
 
+static const uintptr_t STIMER_TARGET_NATIVE = ~static_cast<uintptr_t>(0);
+
 // implementation Timer
 
 Timer::Timer()
@@ -261,6 +263,17 @@ void Scheduler::schedule(const ccSchedulerFunc& callback,
     timer->release();
 }
 
+void Scheduler::schedule(const ccSchedulerFunc& callback,
+                         int target,
+                         float interval,
+                         unsigned int repeat,
+                         float delay,
+                         bool paused,
+                         std::string_view key)
+{
+    schedule(callback, reinterpret_cast<void*>(STIMER_TARGET_NATIVE - target), interval, repeat, delay, paused, key);
+}
+
 void Scheduler::unschedule(std::string_view key, void* target)
 {
     // explicit handle nil arguments when removing an object
@@ -309,6 +322,10 @@ void Scheduler::unschedule(std::string_view key, void* target)
             }
         }
     }
+}
+
+void Scheduler::unschedule(std::string_view key, int target) {
+    unschedule(key, reinterpret_cast<void*>(STIMER_TARGET_NATIVE - target));
 }
 
 void Scheduler::priorityIn(axstd::pod_vector<SchedHandle*>& list,
@@ -561,6 +578,10 @@ void Scheduler::resumeTarget(void* target)
     }
 }
 
+void Scheduler::resumeTarget(int target) {
+    resumeTarget(reinterpret_cast<void*>(STIMER_TARGET_NATIVE - target));
+}
+
 void Scheduler::pauseTarget(void* target)
 {
     AXASSERT(target != nullptr, "target can't be nullptr!");
@@ -578,6 +599,10 @@ void Scheduler::pauseTarget(void* target)
     {
         updateIt->second->paused = true;
     }
+}
+
+void Scheduler::pauseTarget(int target) {
+    pauseTarget(reinterpret_cast<void*>(STIMER_TARGET_NATIVE - target));
 }
 
 bool Scheduler::isTargetPaused(void* target)
@@ -599,6 +624,11 @@ bool Scheduler::isTargetPaused(void* target)
     }
 
     return false;  // should never get here
+}
+
+bool Scheduler::isTargetPaused(int target)
+{
+    return isTargetPaused(reinterpret_cast<void*>(STIMER_TARGET_NATIVE - target));
 }
 
 std::set<void*> Scheduler::pauseAllTargets()

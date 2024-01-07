@@ -126,6 +126,9 @@ class NativeFunction(object):
         return self.ret_type.containsType(typeName)
 
     def isEqual(self, m):
+        if self.name != m.name:
+            return False
+
         if len(self.arguments) != len(m.arguments):
             return False
         if not self.ret_type.isEqual(m.ret_type):
@@ -141,6 +144,12 @@ class NativeFunction(object):
     def isStatic(self):
         return self.is_constructor or self.static
 
+    @property
+    def funcName(self):
+        if self.name == 'end':
+            return 'endToLua'
+        else:
+            return self.name
 
 class NativeField(object):
     def __init__(self, cursor):

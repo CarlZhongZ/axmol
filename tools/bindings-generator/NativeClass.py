@@ -15,18 +15,15 @@ from Fields import NativeField
 
 class NativeClass(object):
     def __init__(self, cursor, generator):
-        # the cursor to the implementation
         self.cursor = cursor
         self.class_name = cursor.displayname
         self.parents = []
         self.public_fields = []
         self.constructors = []
-        self.methods = {}
-        self.static_methods = {}
+        self.methods = []
+        self.static_methods = []
         self.generator = generator
         self._current_visibility = cindex.AccessSpecifier.PRIVATE
-        #for generate lua api doc
-        self.override_methods = {}
 
         self.namespace_name = ConvertUtils.get_namespace_name(cursor)
         self.ns_full_name = ConvertUtils.get_namespaced_name(cursor)
@@ -60,27 +57,43 @@ class NativeClass(object):
 
     @property
     def validMethods(self):
-        ret = []
-        for _, m in self.methods.items():
-            if not m.isNotSupported:
-                ret.append(m)
+        ret = {}
+        for m in self.methods:
+            if m.isNotSupported:
+                continue
+            
+            m.lua_func_name = m.funcName
+            i = 1
+            while m.lua_func_name in ret:
+                m.lua_func_name = m.funcName + str(i)
+                i += 1
+            ret[m.lua_func_name] = m
         return ret
 
     @property
     def validStaticMethods(self):
-        ret = []
-        for _, m in self.static_methods.items():
-            if not m.isNotSupported:
-                ret.append(m)
+        ret = {}
+        for m in self.static_methods:
+            if m.isNotSupported:
+                continue
+
+            m.lua_func_name = m.funcName
+            i = 1
+            while m.lua_func_name in ret:
+                m.lua_func_name = m.funcName + str(i)
+                i += 1
+            ret[m.lua_func_name] = m
+
         return ret
     
     @property
     def validFields(self):
         ret = []
         for m in self.public_fields:
-            if not m.isNotSupported:
-                ret.append(m)
-        
+            if m.isNotSupported:
+                continue
+            ret.append(m)
+
         return ret
     
     @property
@@ -111,8 +124,9 @@ class NativeClass(object):
     @staticmethod
     def _is_method_in_parents(current_class, method_name):
         if len(current_class.parents) > 0:
-            if method_name in current_class.parents[0].methods:
-                return True
+            for m in current_class.parents[0].methods:
+                if method_name == m.name:
+                    return True
             return NativeClass._is_method_in_parents(current_class.parents[0], method_name)
         return False
 
@@ -142,29 +156,20 @@ class NativeClass(object):
             # skip if variadic
             if self._current_visibility == cindex.AccessSpecifier.PUBLIC and not cursor.type.is_function_variadic() and not self._shouldSkip(cursor.spelling):
                 m = NativeFunction(cursor, self, False)
-                registration_name = self.generator.should_rename_function(self.class_name, m.name) or m.name
                 if m.is_override:
-                    if NativeClass._is_method_in_parents(self, registration_name):
+                    if NativeClass._is_method_in_parents(self, m.name):
                         return
 
-                idx = 1
-                curName = registration_name
                 if m.static:
-                    while curName in self.static_methods:
-                        if m.isEqual(self.static_methods[curName]):
+                    for mm in self.static_methods:
+                        if mm.isEqual(m):
                             return
-                        curName = '%s_%d' % (registration_name, idx)
-                        idx += 1
-                    self.static_methods[curName] = m
-                    m.lua_func_name = curName
+                    self.static_methods.append(m)
                 else:
-                    while curName in self.methods:
-                        if m.isEqual(self.methods[curName]):
+                    for mm in self.methods:
+                        if mm.isEqual(m):
                             return
-                        curName = '%s_%d' % (registration_name, idx)
-                        idx += 1
-                    self.methods[curName] = m
-                    m.lua_func_name = curName
+                    self.methods.append(m)
         elif self._current_visibility == cindex.AccessSpecifier.PUBLIC and cursor.kind == cindex.CursorKind.CONSTRUCTOR:
             # Skip copy constructor
             if cursor.displayname != self.class_name + "(const " + self.ns_full_name + " &)":
@@ -188,9 +193,9 @@ class NativeClass(object):
     def testUseTypes(self, useTypes):
         for field in self.public_fields:
             field.testUseTypes(useTypes)
-        for (_, method) in self.methods.items():
+        for method in self.methods:
             method.testUseTypes(useTypes)
-        for (_, method) in self.static_methods.items():
+        for method in self.static_methods:
             method.testUseTypes(useTypes)
 
     def containsType(self, typeName):
