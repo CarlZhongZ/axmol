@@ -266,12 +266,10 @@ void Scheduler::schedule(const ccSchedulerFunc& callback,
 void Scheduler::schedule(const ccSchedulerFunc& callback,
                          int target,
                          float interval,
-                         unsigned int repeat,
-                         float delay,
-                         bool paused,
                          std::string_view key)
 {
-    schedule(callback, reinterpret_cast<void*>(STIMER_TARGET_NATIVE - target), interval, repeat, delay, paused, key);
+    schedule(callback, reinterpret_cast<void*>(STIMER_TARGET_NATIVE - target), interval, AX_REPEAT_FOREVER, 0,
+             false, key);
 }
 
 void Scheduler::unschedule(std::string_view key, void* target)

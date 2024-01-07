@@ -256,9 +256,6 @@ public:
     void schedule(const ccSchedulerFunc& callback,
                   int target,
                   float interval,
-                  unsigned int repeat,
-                  float delay,
-                  bool paused,
                   std::string_view key);
 
     /** The scheduled method will be called every 'interval' seconds for ever.
