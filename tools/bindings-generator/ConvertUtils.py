@@ -1,10 +1,6 @@
 from clang import cindex
-import sys
-import yaml
 import re
 import os
-import inspect
-import traceback
 import json
 from Cheetah.Template import Template
 from NativeType import NativeType
@@ -405,7 +401,7 @@ def getSortedClasses():
 def generate_code():
     _parseHeaders()
 
-    outdir = os.path.abspath('../../extensions/scripting/lua-bindings/auto')
+    outdir = os.path.abspath(os.path.join(engine_path, 'extensions/scripting/lua-bindings/auto'))
 
     useTypes = set()
     realUseTypes = set()

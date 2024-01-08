@@ -45,6 +45,10 @@ class NativeStruct(object):
             elif cursor.kind == cindex.CursorKind.CONSTRUCTOR:
                 if ConvertUtils.isValidConstructor(cursor):
                     self.constructors.append(NativeFunction(cursor, self, True))
+            elif cursor.kind == cindex.CursorKind.VAR_DECL:
+                # class static var
+                # ax::Vec2::ONE
+                pass
 
     def testUseTypes(self, useTypes):
         for field in self.fields:

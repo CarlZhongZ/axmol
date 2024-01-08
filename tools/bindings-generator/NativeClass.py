@@ -165,7 +165,7 @@ class NativeClass(object):
                                 return
                         self.methods.append(m)
             elif cursor.kind == cindex.CursorKind.CONSTRUCTOR:
-                if not cursor.is_copy_constructor() and not cursor.is_move_constructor():
+                if ConvertUtils.isValidConstructor(cursor):
                     self.constructors.append(NativeFunction(cursor, self, True))
             elif cursor.kind == cindex.CursorKind.CLASS_DECL:
                 if ConvertUtils.isValidDefinition(cursor):
