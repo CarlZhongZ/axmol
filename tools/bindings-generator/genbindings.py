@@ -221,9 +221,8 @@ def main():
 
 
     try:
-        output_dir = '%s/extensions/scripting/lua-bindings/auto' % project_root
         sections = 'ax_base'
-        command = '%s generatorLuaClassDesc.py configs/ax_base.ini -s %s -o %s' % (python_bin, sections, output_dir)
+        command = '%s generatorLuaClassDesc.py configs/ax_base.ini -s %s' % (python_bin, sections)
         print(command)
         _run_cmd(command)
 

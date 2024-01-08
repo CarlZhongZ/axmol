@@ -37,22 +37,6 @@ _numberTypeset = set()
 for (_, v) in numberTypes.items():
     _numberTypeset.add(v)
 
-_strNsNameSet = set([
-    'std::basic_string<char>',
-    'std::basic_string_view<char>',
-])
-def regStringType(types):
-    for tp in types:
-        _strNsNameSet.add(tp)
-
-_arrayParseFun = []
-def regArrayType(parseFun):
-    _arrayParseFun.append(parseFun)
-
-_tableParseFun = []
-def regTableType(parseFun):
-    _tableParseFun.append(parseFun)
-
 def genFunctionParms(parmsStrs, cur=None):
     ret = []
     size = len(parmsStrs)
@@ -149,6 +133,8 @@ class NativeType(object):
         self.is_const = False
         self.is_pointer = 0
         self.is_reference = 0
+
+        self._customizeLuaType = None
 
     def _onParseCodeEndCheck(self, useTypes):
         ns_full_name = self.ns_full_name
@@ -267,25 +253,25 @@ class NativeType(object):
             self.not_supported = True
             return
 
-        if self.ns_full_name in _strNsNameSet:
+        self._customizeLuaType = ConvertUtils.string_types.get(self.ns_full_name)
+        if self._customizeLuaType:
             self.is_string = True
             return
 
-        for parseFun in _arrayParseFun:
-            self.is_array, self.array_ele_type, self.container_add_method_name = parseFun(self.ns_full_name)
-            if self.is_array:
-                return
+        self.is_array, self.array_ele_type, self.container_add_method_name = ConvertUtils.tryParseArrayType(self.ns_full_name)
+        if self.is_array:
+            return
 
-        for parseFun in _tableParseFun:
-            self.is_table, self.table_ele_type, self.container_add_method_name = parseFun(self.ns_full_name)
-            if self.is_table:
-                return
+        self.is_table, self.table_ele_type, self.container_add_method_name = ConvertUtils.tryParseTableType(self.ns_full_name)
+        if self.is_table:
+            return
 
         # parse function
         self.is_function, self.ret_type, self.param_types = _tryParseFunction(self.ns_full_name)
-        if not self.is_function:
-            # parse class
-            self.is_class = True
+        if self.is_function:
+            return
+        
+        self.is_class = True
 
     @staticmethod
     def from_type_str(typename):
@@ -299,6 +285,9 @@ class NativeType(object):
 
     @property
     def luaType(self):
+        if self._customizeLuaType:
+            return self._customizeLuaType
+
         if self.is_numeric:
             return 'number'
         elif self.is_string:

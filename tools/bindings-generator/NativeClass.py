@@ -14,7 +14,7 @@ from Fields import NativeFunction
 from Fields import NativeField
 
 class NativeClass(object):
-    def __init__(self, cursor, generator):
+    def __init__(self, cursor):
         self.cursor = cursor
         self.class_name = cursor.displayname
         self.parents = []
@@ -22,18 +22,11 @@ class NativeClass(object):
         self.constructors = []
         self.methods = []
         self.static_methods = []
-        self.generator = generator
         self._current_visibility = cindex.AccessSpecifier.PRIVATE
 
         self.namespace_name = ConvertUtils.get_namespace_name(cursor)
         self.ns_full_name = ConvertUtils.get_namespaced_name(cursor)
-        
-        self.parse()
 
-    def parse(self):
-        '''
-        parse the current cursor, getting all the necesary information
-        '''
         print('parse class', self.ns_full_name)
         for node in self.cursor.get_children():
             self._process_node(node)
@@ -98,7 +91,7 @@ class NativeClass(object):
     
     @property
     def validConstructors(self):
-        if self.ns_full_name not in self.generator.non_ref_classes:
+        if self.ns_full_name not in ConvertUtils.non_ref_classes:
             return {}
 
         validStaticMethods  = self.validStaticMethods
@@ -144,7 +137,7 @@ class NativeClass(object):
             if parent_name:
                 parentNSName = ConvertUtils.get_namespaced_name(parent)
                 if parentNSName not in ConvertUtils.parsedClasses:
-                    ConvertUtils.parsedClasses[parentNSName] = NativeClass(parent, self.generator)
+                    ConvertUtils.parsedClasses[parentNSName] = NativeClass(parent)
 
                 self.parents.append(ConvertUtils.parsedClasses[parentNSName])
         elif cursor.kind == cindex.CursorKind.CXX_ACCESS_SPEC_DECL:
@@ -177,8 +170,8 @@ class NativeClass(object):
             elif cursor.kind == cindex.CursorKind.CLASS_DECL:
                 if ConvertUtils.isValidDefinition(cursor):
                     nsName = ConvertUtils.get_namespaced_name(cursor)
-                    if self.generator.in_listed_classes(nsName) and nsName not in ConvertUtils.parsedClasses:
-                        ConvertUtils.parsedClasses[nsName] = NativeClass(cursor, self.generator)
+                    if ConvertUtils.isValidClassName(nsName) and nsName not in ConvertUtils.parsedClasses:
+                        ConvertUtils.parsedClasses[nsName] = NativeClass(cursor)
             elif cursor.kind == cindex.CursorKind.STRUCT_DECL:
                 if ConvertUtils.isValidDefinition(cursor):
                     nsName = ConvertUtils.get_namespaced_name(cursor)
@@ -248,4 +241,5 @@ class NativeClass(object):
 
     @property
     def isRefClass(self):
-        return self.ns_full_name not in self.generator.non_ref_classes
+        nsName = self.ns_full_name
+        return nsName not in ConvertUtils.non_ref_classes and nsName not in ConvertUtils.struct_classes

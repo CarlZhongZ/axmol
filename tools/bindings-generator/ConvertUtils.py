@@ -8,15 +8,13 @@ import traceback
 import json
 from Cheetah.Template import Template
 from NativeType import NativeType
+from NativeClass import NativeClass
+from NativeStruct import NativeStruct
+from NativeEnum import NativeEnum
+
 
 with open('configs/parse_config.json', 'r') as f:
     parseConfig = json.loads(f.read())
-
-parsedEnums = {}
-
-parsedStructs = {}
-
-parsedClasses = {}
 
 # 只会导出 ns_map 记录的命名空间中的类
 ns_map = parseConfig['ns_map']
@@ -151,6 +149,13 @@ def get_availability(cursor):
 
     return AvailabilityKind.from_id(cursor._availability)
 
+def isValidMethod(cursor):
+    # skip if variadic
+    return get_availability(cursor) != AvailabilityKind.DEPRECATED and not cursor.type.is_function_variadic()
+
+def isValidConstructor(cursor):
+    return not cursor.is_copy_constructor() and not cursor.is_move_constructor()
+
 def build_namespace(cursor, namespaces=[]):
     '''
     build the full namespace for a specific cursor
@@ -246,3 +251,262 @@ def parseCuorsor(cursor):
     _parse(cursor, 0)
 
     print('parsing cursor end')
+
+
+
+
+clang_args = None
+
+engine_path = os.path.abspath('../..')
+
+parsedEnums = {}
+
+parsedStructs = {}
+
+parsedClasses = {}
+
+classes = {}
+
+# 内存由 c++ 管理， 需要在析构的时候做销毁处理
+ref_classes = set()
+for ns, names in parseConfig['ref_classes'].items():
+    for name in names:
+        ref_classes.add(f'{ns}{name}')
+
+# 内存由 lua 管理， lua gc 的时候会将该对象内存销毁
+non_ref_classes = set()
+for ns, names in parseConfig['non_ref_classes'].items():
+    for name in names:
+        non_ref_classes.add(f'{ns}{name}')
+
+# 将类对待成 struct 在 lua 中以 table 形式存在
+struct_classes = set()
+for ns, names in parseConfig['struct_classes'].items():
+    for name in names:
+        struct_classes.add(f'{ns}{name}')
+
+# 该类会在lua中被扩展，标记一个新的扩展类名供生成 lua 静态类型用
+custorm_lua_class_info = set()
+for ns, names in parseConfig['custorm_lua_class_info'].items():
+    for name in names:
+        custorm_lua_class_info.add(f'{ns}{name}')
+
+# c++ 的类对应的 String lua 类型
+string_types = parseConfig['string_types']
+
+# c++ 的类对应的 array lua 类型
+array_types = parseConfig['array_types']
+
+def tryParseArrayType(nsName):
+    for tp, addMethodName in array_types.items():
+        eleType = None
+        addMethod = None
+        if nsName.startswith(tp):
+            idx = nsName.find('<')
+            if idx != -1:
+                eleType = NativeType.from_type_str(nsName[idx + 1:-1])
+                addMethod = addMethodName
+
+        if eleType:
+            return True, eleType, addMethod
+
+    return False, None, None
+
+def tryParseTableType(nsName):
+    return False, None, None
+
+
+def isValidClassName(nsName):
+    if nsName in non_ref_classes or nsName in struct_classes or nsName in ref_classes:
+        return True
+
+    for ns, names in classes.items():
+        if not nsName.startswith(ns):
+            continue
+        className = nsName.replace(ns, '')
+        for name in names:
+            md = re.match("^" + name + "$", className)
+            if md:
+                return True
+
+    return False
+
+
+def _parse(cursor):
+    if cursor.kind == cindex.CursorKind.CLASS_DECL:
+        if isValidDefinition(cursor):
+            nsName = get_namespaced_name(cursor)
+            if isValidClassName(nsName) and nsName not in parsedClasses:
+                parsedClasses[nsName] = NativeClass(cursor)
+        return
+    elif cursor.kind == cindex.CursorKind.STRUCT_DECL:
+        if isValidDefinition(cursor):
+            nsName = get_namespaced_name(cursor)
+            if nsName not in parsedStructs:
+                parsedStructs[nsName] = NativeStruct(cursor)
+        return
+    elif cursor.kind == cindex.CursorKind.ENUM_DECL:
+        if isValidDefinition(cursor):
+            nsName = get_namespaced_name(cursor)
+            if nsName not in parsedEnums:
+                parsedEnums[nsName] = NativeEnum(cursor)
+        return
+
+    for node in cursor.get_children():
+        _parse(node)
+
+def _pretty_print(diagnostics):
+    errors=[]
+    for idx, d in enumerate(diagnostics):
+        if d.severity > 2:
+            errors.append(d)
+    if len(errors) == 0:
+        return
+    print("====\nErrors in parsing headers:")
+    severities=['Ignored', 'Note', 'Warning', 'Error', 'Fatal']
+    for idx, d in enumerate(errors):
+        print("%s. <severity = %s,\n    location = %r,\n    details = %r>" % (
+            idx+1, severities[d.severity], d.location, d.spelling))
+    print("====\n")
+
+def _parseHeaders():
+    index = cindex.Index.create()
+    for header in parseConfig['parse_engine_headers']:
+        print("parsing header => %s" % header)
+        tu = index.parse(os.path.join(engine_path, header), clang_args)
+        if len(tu.diagnostics) > 0:
+            _pretty_print(tu.diagnostics)
+            is_fatal = False
+            for d in tu.diagnostics:
+                if d.severity >= cindex.Diagnostic.Error:
+                    is_fatal = True
+            if is_fatal:
+                print("*** Found errors - can not continue")
+                raise Exception("Fatal error in parsing headers")
+        _parse(tu.cursor)
+
+def _sorted_parents(nclass):
+    sorted_parents = []
+    for p in nclass.parents:
+        sorted_parents += _sorted_parents(p)
+    sorted_parents.append(nclass.ns_full_name)
+    return sorted_parents
+
+def getSortedClasses():
+    sorted_list = []
+    for nsName in sorted(parsedClasses.keys()):
+        nclass = parsedClasses[nsName]
+        sorted_list += _sorted_parents(nclass)
+    # remove dupes from the list
+    no_dupes = []
+    [no_dupes.append(i) for i in sorted_list if not no_dupes.count(i)]
+    return no_dupes
+
+def generate_code():
+    _parseHeaders()
+
+    outdir = os.path.abspath('../../extensions/scripting/lua-bindings/auto')
+
+    useTypes = set()
+    realUseTypes = set()
+    for _, nativeClass in parsedClasses.items():
+        nativeClass.testUseTypes(useTypes)
+        realUseTypes.add(nativeClass.ns_full_name)
+
+    enumTypes = []
+    structTypes = []
+    for tp in useTypes:
+        if tp in parsedEnums:
+            enumTypes.append(tp)
+            realUseTypes.add(tp)
+        elif tp in parsedStructs:
+            structTypes.append(tp)
+            realUseTypes.add(tp)
+
+    NativeType.onParseCodeEnd(realUseTypes)
+
+    validStructs = []
+    for tp in structTypes:
+        if parsedStructs[tp].isNotSupported:
+            continue
+        validStructs.append(tp)
+
+    enumTypes.sort()
+    validStructs.sort()
+    structTypes = validStructs
+
+    # 根据依赖性排序
+    dependantSortedStructTypes = []
+    for i in range(len(structTypes)):
+        tp = structTypes[i]
+        for j in range(i):
+            if parsedStructs[structTypes[j]].containsType(tp):
+                dependantSortedStructTypes.insert(j, tp)
+                break
+        else:
+            dependantSortedStructTypes.append(tp)
+    structTypes = dependantSortedStructTypes
+
+    classTypes = getSortedClasses()
+
+    f = open(os.path.abspath("../../app/Content/src/framework/declare_types/auto/engine_types.lua"), "wt+", encoding='utf8', newline='\n')
+    f.write(str(Template(file='configs/engine_types.lua.tmpl',
+                                searchList=[{
+                                    'luaGlobalVars': getLuaGlobalVarNames(),
+                                    'enumTypes': enumTypes,
+                                    'parsedEnums' :parsedEnums,
+                                    'structTypes': structTypes,
+                                    'parsedStructs': parsedStructs,
+                                    'classTypes': classTypes,
+                                    'parsedClasses': parsedClasses,
+                                }])))
+
+    fEnum = open(os.path.abspath("../../app/Content/src/framework/declare_types/auto/engine_enums.lua"), "wt+", encoding='utf8', newline='\n')
+    fEnum.write(str(Template(file='configs/engine_enums.lua.tmpl',
+                                searchList=[{
+                                    'enumTypes': enumTypes,
+                                    'parsedEnums' :parsedEnums,
+                                }])))
+
+    # gen cpp audo code
+    fAutoGenCodesCpp = open(os.path.join(outdir, "lua_auto_gen_codes.cpp"), "wt+",
+                            encoding='utf8', newline='\n')
+
+    fAutoGenCodesCpp.write(str(Template(file='configs/lua_auto_gen_codes.cpp.tmpl',
+                                searchList=[{
+                                    'code_includes': parseConfig['code_includes'],
+                                    'structTypes': structTypes,
+                                    'classTypes': classTypes,
+                                    'parsedStructs': parsedStructs,
+                                    'parsedClasses': parsedClasses,
+                                }])))
+
+    fAutoConvertCodes = open(os.path.join(outdir, "tolua_auto_convert.h"), "wt+",
+                            encoding='utf8', newline='\n')
+    fAutoConvertCodes.write(str(Template(file='configs/tolua_auto_convert.h.tmpl',
+                                searchList=[{
+                                    'code_includes': parseConfig['code_includes'],
+                                    'structTypes': structTypes,
+                                    'parsedStructs': parsedStructs,
+                                }])))
+    
+    fAutoConvertCodes = open(os.path.join(outdir, "tolua_auto_convert.cpp"), "wt+",
+                            encoding='utf8', newline='\n')
+    fAutoConvertCodes.write(str(Template(file='configs/tolua_auto_convert.cpp.tmpl',
+                                searchList=[{
+                                    'structTypes': structTypes,
+                                    'parsedStructs': parsedStructs,
+                                }])))
+
+    # write test classes info
+    fClassInfo = open(os.path.join("configs/classes.txt"), "wt+", encoding='utf8', newline='\n')
+    for _, cls in parsedClasses.items():
+        base = cls.parents[0].ns_full_name if cls.parents else 'None'
+        fClassInfo.write(f'\n\n\nclass:{cls.ns_full_name} base:{base} isRefClass:{cls.isRefClass}\n')
+        for m in cls.methods:
+            fClassInfo.write(f'\t{m.cursor.displayname} {m.isNotSupported}\n')
+            fClassInfo.write('\t')
+            for t in m.arguments:
+                fClassInfo.write(f'\t{t.ns_full_name}: {t.isNotSupported} {t.not_supported} {t.is_pointer} {t.is_reference} {t.is_class} {t.is_string}')
+            fClassInfo.write('\n')
+

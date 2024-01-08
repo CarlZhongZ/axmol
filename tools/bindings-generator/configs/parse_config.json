@@ -1,4 +1,8 @@
 {
+    "parse_engine_headers": ["core/cocos2d.h"],
+    "code_includes": [
+        "cocos2d.h"
+    ],
     "ns_map": [
         ["ax::backend::", "ccb."],
         ["ax::ui::", "ccui."],
@@ -18,7 +22,18 @@
         ]
     },
     "non_ref_classes": {
-        "ax::": ["Vec2", "Vec3", "Vec4", "Rect", "Mat4", "Quaternion", "PolygonInfo"]
+        "ax::": ["PolygonInfo"]
+    },
+    "struct_classes": {
+        "ax::": ["Vec2", "Vec3", "Vec4", "Rect", "Mat4", "Quaternion"]
+    },
+    "costomize_struct": {
+        "ax::": {
+            "Vec2": {
+                "x": "float",
+                "y": "float"
+            }
+        }
     },
     "skip_members": {
         "ax::": {
@@ -29,5 +44,14 @@
     },
     "custorm_lua_class_info": {
         "ax::": ["Node"]
+    },
+    "string_types": {
+        "std::basic_string<char>": "String",
+        "std::basic_string_view<char>": "String",
+        "ax::Data": "String|nil"
+    },
+    "array_types": {
+        "std::vector": "push_back",
+        "ax::Vector": "pushBack"
     }
 }
