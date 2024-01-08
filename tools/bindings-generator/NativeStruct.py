@@ -10,6 +10,7 @@ from Cheetah.Template import Template
 import ConvertUtils
 from NativeType import NativeType
 from Fields import NativeField
+from Fields import NativeFunction
 
 class NativeStruct(object):
     def __init__(self, cursor):
@@ -23,17 +24,27 @@ class NativeStruct(object):
         self.namespace_name        = ConvertUtils.get_namespace_name(cursor)
 
         print('parse struct', self.ns_full_name)
-        self._deep_iterate(self.cursor, 0)
 
-    def _deep_iterate(self, cursor=None, depth=0):
-        for node in cursor.get_children():
-            #print("%s%s - %s" % ("> " * depth, node.displayname, node.kind))
-            if self._process_node(node):
-                self._deep_iterate(node, depth + 1)
+        for node in self.cursor.get_children():
+            if node.kind == cindex.CursorKind.FIELD_DECL:
+                self.fields.append(NativeField(node))
+            elif cursor.kind == cindex.CursorKind.CXX_METHOD:
+                if ConvertUtils.isValidMethod(cursor):
+                    m = NativeFunction(cursor, self, False)
 
-    def _process_node(self, node):
-        if node.kind == cindex.CursorKind.FIELD_DECL:
-            self.fields.append(NativeField(node))
+                    if m.static:
+                        for mm in self.static_methods:
+                            if mm.isEqual(m):
+                                return
+                        self.static_methods.append(m)
+                    else:
+                        for mm in self.methods:
+                            if mm.isEqual(m):
+                                return
+                        self.methods.append(m)
+            elif cursor.kind == cindex.CursorKind.CONSTRUCTOR:
+                if ConvertUtils.isValidConstructor(cursor):
+                    self.constructors.append(NativeFunction(cursor, self, True))
 
     def testUseTypes(self, useTypes):
         for field in self.fields:
