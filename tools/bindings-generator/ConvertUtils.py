@@ -309,10 +309,10 @@ def isMethodShouldSkip(nsName, methodName):
     if not skipMethods:
         return False
 
-    if name in skipMethods:
+    if methodName in skipMethods:
         return True
     for reName in skipMethods:
-        if re.match(reName, name):
+        if re.match(reName, methodName):
             return True
 
     return False
