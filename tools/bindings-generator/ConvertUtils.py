@@ -274,10 +274,10 @@ struct_classes = set(parseConfig['struct_classes'])
 costomize_struct = parseConfig['costomize_struct']
 
 # 该类会在lua中被扩展，标记一个新的扩展类名供生成 lua 静态类型用
-custorm_lua_class_info = set()
-for ns, names in parseConfig['custorm_lua_class_info'].items():
+custom_lua_class_info = set()
+for ns, names in parseConfig['custom_lua_class_info'].items():
     for name in names:
-        custorm_lua_class_info.add(f'{ns}{name}')
+        custom_lua_class_info.add(f'{ns}{name}')
 
 # c++ 的类对应的 String lua 类型
 string_types = parseConfig['string_types']

@@ -43,7 +43,7 @@
         "ax::Application": ["applicationScreenSizeChanged"],
         "ax::GLViewImpl": ["loadGLES2"]
     },
-    "custorm_lua_class_info": {
+    "custom_lua_class_info": {
         "ax::": ["Node"]
     },
     "string_types": {
