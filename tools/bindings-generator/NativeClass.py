@@ -1,33 +1,11 @@
-from clang import cindex
-
 import ConvertUtils
 from NativeStruct import NativeStruct
 
 class NativeClass(NativeStruct):
-    def _process_node(self, cursor):
-        if cursor.kind == cindex.CursorKind.CXX_BASE_SPECIFIER:
-            parent = cursor.get_definition()
-            parent_name = parent.displayname
-
-            if parent_name:
-                parentNSName = ConvertUtils.get_namespaced_name(parent)
-                if parentNSName not in ConvertUtils.parsedClasses:
-                    ConvertUtils.parsedClasses[parentNSName] = NativeClass(parent)
-
-                self.parents.append(ConvertUtils.parsedClasses[parentNSName])
-        elif cursor.kind == cindex.CursorKind.CXX_ACCESS_SPEC_DECL:
-            self._current_visibility = cursor.access_specifier
-        elif self._current_visibility == cindex.AccessSpecifier.PUBLIC:
-            if cursor.kind in ConvertUtils.classOrStructMemberCursorKind:
-                self._parseMembers(cursor)
-            else:
-                ConvertUtils.tryParseTypes(cursor)
-
     # override
     def _parse(self):
         print('parse class', self.ns_full_name)
-        for node in self.cursor.get_children():
-            self._process_node(node)
+        self._commonParse()
 
     @property
     def validFields(self):

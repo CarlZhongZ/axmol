@@ -21,28 +21,12 @@ class NativeStruct(object):
         self.ns_full_name = ConvertUtils.get_namespaced_name(cursor)
 
         self.customize_struct_info = None
+        self.public_static_const_vars = []
 
         self._parse()
 
-    def _shouldSkip(self, name):
-        skip_members = ConvertUtils.parseConfig['skip_members']
-
-        info = skip_members.get(self.namespace_name)
-        if not info:
-            return False
-
-        skipMethods = info.get(self.class_name)
-        if skipMethods:
-            if name in skipMethods:
-                return True
-            for reName in skipMethods:
-                if re.match(reName, name):
-                    return True
-
-        return False
-
     def _parseMembers(self, node):
-        if self._shouldSkip(node.spelling):
+        if ConvertUtils.isMethodShouldSkip(self.ns_full_name, node.spelling):
             return
 
         if node.kind == cindex.CursorKind.FIELD_DECL:
@@ -71,27 +55,35 @@ class NativeStruct(object):
             if ConvertUtils.isValidConstructor(node):
                 self.constructors.append(NativeFunction(node, self, True))
 
+    def _commonParse(self):
+        for node in self.cursor.get_children():
+            parent = ConvertUtils.tryParseParent(node)
+            if parent:
+                self.parents.append(parent)
+            elif node.kind == cindex.CursorKind.CXX_ACCESS_SPEC_DECL:
+                self._current_visibility = node.access_specifier
+            elif self._current_visibility == cindex.AccessSpecifier.PUBLIC:
+                if node.kind in ConvertUtils.classOrStructMemberCursorKind:
+                    self._parseMembers(node)
+                elif node.kind == cindex.CursorKind.VAR_DECL:
+                    nt = NativeType.from_type(node.type)
+                    if nt.is_const:
+                        # print('VAR_DECL', node.displayname, nt.fullCppDeclareTypeName)
+                        self.public_static_const_vars.append((ConvertUtils.get_namespaced_name(node), nt))
+                else:
+                    ConvertUtils.tryParseTypes(node)
+
+    # override
     def _parse(self):
-        self.customize_struct_info = ConvertUtils.costomize_struct.get(self.ns_full_name)
         print('parse struct', self.ns_full_name)
-
-        self.public_static_const_vars = []
-
+        self._current_visibility = cindex.AccessSpecifier.PUBLIC
+        self.customize_struct_info = ConvertUtils.costomize_struct.get(self.ns_full_name)
+        
         if self.customize_struct_info:
             for fieldName, typeStr in self.customize_struct_info.items():
                 self.public_fields.append(NativeField(None, fieldName, typeStr))
 
-        for node in self.cursor.get_children():
-            if node.kind in ConvertUtils.classOrStructMemberCursorKind:
-                self._parseMembers(node)
-            elif node.kind == cindex.CursorKind.VAR_DECL:
-                nt = NativeType.from_type(node.type)
-                print('VAR_DECL', node.displayname, nt.ns_full_name, nt.is_const)
-                if nt.is_const:
-                    self.public_static_const_vars.append(ConvertUtils.get_namespaced_name(node))
-            else:
-                ConvertUtils.tryParseTypes(node)
-                
+        self._commonParse()
 
     def testUseTypes(self, useTypes):
         if self.isNotSupported:

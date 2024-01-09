@@ -211,19 +211,6 @@ def iterate_param_node(param_node, depth=1):
 
     return False
 
-def isValidDefinition(cursor):
-    if cursor != cursor.type.get_declaration():
-        return False
-    
-    if not isTargetedNamespace(cursor):
-        return False
-
-    iter = cursor.get_children()
-    for _ in iter:
-        return True
-    return False
-
-
 notUsedClassMemberCursorKind = set([
     cindex.CursorKind.DESTRUCTOR, 
     cindex.CursorKind.FRIEND_DECL, 
@@ -240,7 +227,7 @@ classOrStructMemberCursorKind = set([
     cindex.CursorKind.CONSTRUCTOR, 
 ])
 
-
+# test print cursor
 def parseCuorsor(cursor):
     print('parsing cursor', get_namespaced_name(cursor))
 
@@ -316,10 +303,24 @@ def tryParseArrayType(nsName):
 def tryParseTableType(nsName):
     return False, None, None
 
-def isValidStructClassName(nsName):
+skip_members = parseConfig['skip_members']
+def isMethodShouldSkip(nsName, methodName):
+    skipMethods = skip_members.get(nsName)
+    if not skipMethods:
+        return False
+
+    if name in skipMethods:
+        return True
+    for reName in skipMethods:
+        if re.match(reName, name):
+            return True
+
+    return False
+
+def _isValidStructClassName(nsName):
     return nsName in struct_classes
 
-def isValidClassName(nsName):
+def _isValidClassName(nsName):
     if nsName in non_ref_classes or nsName in ref_classes:
         return True
 
@@ -334,15 +335,27 @@ def isValidClassName(nsName):
 
     return False
 
+def _isValidDefinition(cursor):
+    if cursor != cursor.type.get_declaration():
+        return False
+    
+    if not isTargetedNamespace(cursor):
+        return False
+
+    iter = cursor.get_children()
+    for _ in iter:
+        return True
+    return False
+
 def tryParseTypes(cursor):
-    if not isValidDefinition(cursor):
+    if not _isValidDefinition(cursor):
         return
 
     nsName = get_namespaced_name(cursor)
     if cursor.kind == cindex.CursorKind.CLASS_DECL:
-        if isValidClassName(nsName) and nsName not in parsedClasses:
+        if _isValidClassName(nsName) and nsName not in parsedClasses:
             parsedClasses[nsName] = NativeClass(cursor)
-        elif isValidStructClassName(nsName) and nsName not in parsedStructs:
+        elif _isValidStructClassName(nsName) and nsName not in parsedStructs:
             parsedStructs[nsName] = NativeStruct(cursor)
         return True
     elif cursor.kind == cindex.CursorKind.STRUCT_DECL:
@@ -353,8 +366,18 @@ def tryParseTypes(cursor):
         if nsName not in parsedEnums:
             parsedEnums[nsName] = NativeEnum(cursor)
         return True
-    
 
+def tryParseParent(cursor):
+    if cursor.kind == cindex.CursorKind.CXX_BASE_SPECIFIER:
+        parent = cursor.get_definition()
+        parent_name = parent.displayname
+
+        if parent_name:
+            parentNSName = get_namespaced_name(parent)
+            if parentNSName not in parsedClasses:
+                parsedClasses[parentNSName] = NativeClass(parent)
+
+            return parsedClasses[parentNSName]
 
 def _pretty_print(diagnostics):
     errors=[]
@@ -398,7 +421,7 @@ def _sorted_parents(nclass):
     sorted_parents.append(nclass.ns_full_name)
     return sorted_parents
 
-def getSortedClasses():
+def _getSortedClasses():
     sorted_list = []
     for nsName in sorted(parsedClasses.keys()):
         nclass = parsedClasses[nsName]
@@ -408,7 +431,7 @@ def getSortedClasses():
     [no_dupes.append(i) for i in sorted_list if not no_dupes.count(i)]
     return no_dupes
 
-def generate_code():
+def generateCode():
     _parseHeaders()
 
     outdir = os.path.abspath(os.path.join(engine_path, 'extensions/scripting/lua-bindings/auto'))
@@ -441,7 +464,7 @@ def generate_code():
     validStructs.sort()
     structTypes = validStructs
 
-    classTypes = getSortedClasses()
+    classTypes = _getSortedClasses()
 
     f = open(os.path.abspath("../../app/Content/src/framework/declare_types/auto/engine_types.lua"), "wt+", encoding='utf8', newline='\n')
     f.write(str(Template(file='configs/engine_types.lua.tmpl',

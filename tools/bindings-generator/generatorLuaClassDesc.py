@@ -81,7 +81,7 @@ def main():
         print( "\n.... .... Processing section", s, "\n")
         Generator(config, s)
 
-    ConvertUtils.generate_code()
+    ConvertUtils.generateCode()
 
 if __name__ == '__main__':
     try:

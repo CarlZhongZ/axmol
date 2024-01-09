@@ -39,11 +39,9 @@
         }
     },
     "skip_members": {
-        "ax::": {
-            "ApplicationProtocol": ["^application.+", "initGLContextAttrs"],
-            "Application": ["applicationScreenSizeChanged"],
-            "GLViewImpl": ["loadGLES2"]
-        }
+        "ax::ApplicationProtocol": ["^application.+", "initGLContextAttrs"],
+        "ax::Application": ["applicationScreenSizeChanged"],
+        "ax::GLViewImpl": ["loadGLES2"]
     },
     "custorm_lua_class_info": {
         "ax::": ["Node"]
