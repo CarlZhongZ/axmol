@@ -11,7 +11,7 @@ void tolua_get_value(lua_State* L, int loc, ${structInfo.ns_full_name} &value) {
         return;
     }
 
-    #for field in structInfo.fields
+    #for field in structInfo.public_fields
     lua_getfield(L, loc, "${field.name}");
     ${field.ntype.genGetCode(-1, 'value.%s' % field.name, False)}
     lua_pop(L, 1);
@@ -20,7 +20,7 @@ void tolua_get_value(lua_State* L, int loc, ${structInfo.ns_full_name} &value) {
 
 void tolua_push_value(lua_State* L, const ${structInfo.ns_full_name} &value) {
     lua_newtable(L);
-    #for field in structInfo.fields
+    #for field in structInfo.public_fields
     ${field.ntype.genPushCode('value.%s' % field.name, True)}
     lua_setfield(L, -2, "${field.name}");
     #end for

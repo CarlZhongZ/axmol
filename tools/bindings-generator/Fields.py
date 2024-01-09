@@ -1,11 +1,5 @@
 from clang import cindex
-import sys
-import yaml
 import re
-import os
-import inspect
-import traceback
-from Cheetah.Template import Template
 
 import ConvertUtils
 from NativeType import NativeType
@@ -76,6 +70,9 @@ class NativeFunction(object):
         return replaceStr
 
     def testUseTypes(self, useTypes):
+        if self.isNotSupported:
+            return
+
         for arg in self.arguments:
             arg.testUseTypes(useTypes)
         self.ret_type.testUseTypes(useTypes)
@@ -118,13 +115,6 @@ class NativeFunction(object):
         
         return self.ret_type.isNotSupported
 
-    def containsType(self, typeName):
-        for arg in self.arguments:
-            if arg.containsType(typeName):
-                return True
-
-        return self.ret_type.containsType(typeName)
-
     def isEqual(self, m):
         if self.name != m.name:
             return False
@@ -152,13 +142,15 @@ class NativeFunction(object):
             return self.name
 
 class NativeField(object):
-    def __init__(self, cursor):
-        cursor = cursor.canonical
-        self.cursor = cursor
-        self.name = cursor.displayname
-        self.kind = cursor.type.kind
-        self.location = cursor.location
-        self.ntype  = NativeType.from_type(cursor.type)
+    def __init__(self, cursor, fieldName, typeStr):
+        if cursor:
+            cursor = cursor.canonical
+            self.name = cursor.displayname
+            self.ntype  = NativeType.from_type(cursor.type)
+        else:
+            self.name = fieldName
+            self.ntype = NativeType.from_type_str(typeStr)
+
         # print('Field', self.name, self.ntype.ns_full_name)
 
     @staticmethod
@@ -181,6 +173,3 @@ class NativeField(object):
     def isNotSupported(self):
         # field 不支持 lua 映射类型的指针
         return self.ntype.isNotSupported or self.ntype.isBasicTypePointer
-
-    def containsType(self, typeName):
-        return self.ntype.containsType(typeName)

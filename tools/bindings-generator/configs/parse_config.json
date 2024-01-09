@@ -24,15 +24,18 @@
     "non_ref_classes": {
         "ax::": ["PolygonInfo"]
     },
-    "struct_classes": {
-        "ax::": ["Vec2", "Vec3", "Vec4", "Rect", "Mat4", "Quaternion"]
-    },
+    "struct_classes": [
+        "ax::Vec2",
+        "ax::Vec3",
+        "ax::Vec4",
+        "ax::Rect",
+        "ax::Mat4",
+        "ax::Quaternion"
+    ],
     "costomize_struct": {
-        "ax::": {
-            "Vec2": {
-                "x": "float",
-                "y": "float"
-            }
+        "ax::Vec2": {
+            "x": "float",
+            "y": "float"
         }
     },
     "skip_members": {

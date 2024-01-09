@@ -17,6 +17,8 @@ class Tolua
     static lua_State* _state;
     static std::unordered_map<uintptr_t, int> _pushValues;
     static void registerAutoCode();
+    static void pushStaticCppValues(lua_State* L);
+
 public:
     static std::unordered_map<uintptr_t, const char*> luaType;
     static void declare_ns(const char* name);

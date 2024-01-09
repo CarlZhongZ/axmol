@@ -191,7 +191,7 @@ class NativeType(object):
                 assert(cntype.kind == cindex.TypeKind.MEMBERPOINTER or \
                        cntype.kind == cindex.TypeKind.CONSTANTARRAY or \
                         cntype.kind == cindex.TypeKind.FUNCTIONPROTO or \
-                            cntype.kind == cindex.TypeKind.INCOMPLETEARRAY)
+                            cntype.kind == cindex.TypeKind.INCOMPLETEARRAY, cntype.kind)
                 self.not_supported = True
         else:
             self._tryParseNSName()
@@ -347,6 +347,9 @@ class NativeType(object):
         return False
 
     def testUseTypes(self, useTypes):
+        if self.isNotSupported:
+            return
+
         if self.is_function:
             self.ret_type.testUseTypes(useTypes)
             for param in self.param_types:
@@ -358,22 +361,6 @@ class NativeType(object):
                 # 被类使用到的 struct 里面嵌套的 struct 也会被使用到， 只靠扫表层会查不全
                 print('### parsedStructs', self.ns_full_name)
                 ConvertUtils.parsedStructs[self.ns_full_name].testUseTypes(useTypes)
-
-    def containsType(self, typeName):
-        if typeName == self.ns_full_name:
-            return True
-            
-        if self.is_function:
-            for arg in self.param_types:
-                if arg.containsType(typeName):
-                    return True
-            return self.ret_type.containsType(typeName)
-        elif self.is_array:
-            return self.array_ele_type.containsType(typeName)
-        elif self.is_table:
-            return self.table_ele_type.containsType(typeName)
-        
-        return False
 
     @property
     def cppDeclareTypeName(self):

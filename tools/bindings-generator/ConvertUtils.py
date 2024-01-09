@@ -234,6 +234,12 @@ notUsedClassMemberCursorKind = set([
     ])
 # def parseClass(cursor):
 
+classOrStructMemberCursorKind = set([
+    cindex.CursorKind.FIELD_DECL, 
+    cindex.CursorKind.CXX_METHOD, 
+    cindex.CursorKind.CONSTRUCTOR, 
+])
+
 
 def parseCuorsor(cursor):
     print('parsing cursor', get_namespaced_name(cursor))
@@ -275,11 +281,10 @@ for ns, names in parseConfig['non_ref_classes'].items():
     for name in names:
         non_ref_classes.add(f'{ns}{name}')
 
-# 将类对待成 struct 在 lua 中以 table 形式存在
-struct_classes = set()
-for ns, names in parseConfig['struct_classes'].items():
-    for name in names:
-        struct_classes.add(f'{ns}{name}')
+# 将类对待成 struct
+struct_classes = set(parseConfig['struct_classes'])
+
+costomize_struct = parseConfig['costomize_struct']
 
 # 该类会在lua中被扩展，标记一个新的扩展类名供生成 lua 静态类型用
 custorm_lua_class_info = set()
@@ -311,9 +316,11 @@ def tryParseArrayType(nsName):
 def tryParseTableType(nsName):
     return False, None, None
 
+def isValidStructClassName(nsName):
+    return nsName in struct_classes
 
 def isValidClassName(nsName):
-    if nsName in non_ref_classes or nsName in struct_classes or nsName in ref_classes:
+    if nsName in non_ref_classes or nsName in ref_classes:
         return True
 
     for ns, names in classes.items():
@@ -327,29 +334,27 @@ def isValidClassName(nsName):
 
     return False
 
+def tryParseTypes(cursor):
+    if not isValidDefinition(cursor):
+        return
 
-def _parse(cursor):
+    nsName = get_namespaced_name(cursor)
     if cursor.kind == cindex.CursorKind.CLASS_DECL:
-        if isValidDefinition(cursor):
-            nsName = get_namespaced_name(cursor)
-            if isValidClassName(nsName) and nsName not in parsedClasses:
-                parsedClasses[nsName] = NativeClass(cursor)
-        return
+        if isValidClassName(nsName) and nsName not in parsedClasses:
+            parsedClasses[nsName] = NativeClass(cursor)
+        elif isValidStructClassName(nsName) and nsName not in parsedStructs:
+            parsedStructs[nsName] = NativeStruct(cursor)
+        return True
     elif cursor.kind == cindex.CursorKind.STRUCT_DECL:
-        if isValidDefinition(cursor):
-            nsName = get_namespaced_name(cursor)
-            if nsName not in parsedStructs:
-                parsedStructs[nsName] = NativeStruct(cursor)
-        return
+        if nsName not in parsedStructs:
+            parsedStructs[nsName] = NativeStruct(cursor)
+        return True
     elif cursor.kind == cindex.CursorKind.ENUM_DECL:
-        if isValidDefinition(cursor):
-            nsName = get_namespaced_name(cursor)
-            if nsName not in parsedEnums:
-                parsedEnums[nsName] = NativeEnum(cursor)
-        return
+        if nsName not in parsedEnums:
+            parsedEnums[nsName] = NativeEnum(cursor)
+        return True
+    
 
-    for node in cursor.get_children():
-        _parse(node)
 
 def _pretty_print(diagnostics):
     errors=[]
@@ -379,6 +384,11 @@ def _parseHeaders():
             if is_fatal:
                 print("*** Found errors - can not continue")
                 raise Exception("Fatal error in parsing headers")
+
+        def _parse(cursor):
+            if not tryParseTypes(cursor):
+                for node in cursor.get_children():
+                    _parse(node)
         _parse(tu.cursor)
 
 def _sorted_parents(nclass):
@@ -430,18 +440,6 @@ def generate_code():
     enumTypes.sort()
     validStructs.sort()
     structTypes = validStructs
-
-    # 根据依赖性排序
-    dependantSortedStructTypes = []
-    for i in range(len(structTypes)):
-        tp = structTypes[i]
-        for j in range(i):
-            if parsedStructs[structTypes[j]].containsType(tp):
-                dependantSortedStructTypes.insert(j, tp)
-                break
-        else:
-            dependantSortedStructTypes.append(tp)
-    structTypes = dependantSortedStructTypes
 
     classTypes = getSortedClasses()
 
@@ -506,3 +504,13 @@ def generate_code():
                 fClassInfo.write(f'\t{t.ns_full_name}: {t.isNotSupported} {t.not_supported} {t.is_pointer} {t.is_reference} {t.is_class} {t.is_string}')
             fClassInfo.write('\n')
 
+
+
+def isMethodInParents(current_class, method_name):
+    if len(current_class.parents) > 0:
+        for m in current_class.parents[0].methods:
+            if method_name == m.name:
+                return True
+        return isMethodInParents(current_class.parents[0], method_name)
+
+    return False

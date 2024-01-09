@@ -1,135 +1,10 @@
 from clang import cindex
-import sys
-import yaml
-import re
-import os
-import inspect
-import traceback
-from Cheetah.Template import Template
 
 import ConvertUtils
 from NativeStruct import NativeStruct
-from NativeEnum import NativeEnum
-from Fields import NativeFunction
-from Fields import NativeField
 
-class NativeClass(object):
-    def __init__(self, cursor):
-        self.cursor = cursor
-        self.class_name = cursor.displayname
-        self.parents = []
-        self.public_fields = []
-        self.constructors = []
-        self.methods = []
-        self.static_methods = []
-        self._current_visibility = cindex.AccessSpecifier.PRIVATE
-
-        self.namespace_name = ConvertUtils.get_namespace_name(cursor)
-        self.ns_full_name = ConvertUtils.get_namespaced_name(cursor)
-
-        print('parse class', self.ns_full_name)
-        for node in self.cursor.get_children():
-            self._process_node(node)
-
-    def _shouldSkip(self, name):
-        skip_members = ConvertUtils.parseConfig['skip_members']
-
-        info = skip_members.get(self.namespace_name)
-        if not info:
-            return False
-
-        skipMethods = info.get(self.class_name)
-        if skipMethods:
-            if name in skipMethods:
-                return True
-            for reName in skipMethods:
-                if re.match(reName, name):
-                    return True
-
-        return False
-
-    @property
-    def validMethods(self):
-        ret = {}
-        for m in self.methods:
-            if m.isNotSupported:
-                continue
-            
-            m.lua_func_name = m.funcName
-            i = 1
-            while m.lua_func_name in ret:
-                m.lua_func_name = m.funcName + str(i)
-                i += 1
-            ret[m.lua_func_name] = m
-        return ret
-
-    @property
-    def validStaticMethods(self):
-        ret = {}
-        for m in self.static_methods:
-            if m.isNotSupported:
-                continue
-
-            m.lua_func_name = m.funcName
-            i = 1
-            while m.lua_func_name in ret:
-                m.lua_func_name = m.funcName + str(i)
-                i += 1
-            ret[m.lua_func_name] = m
-
-        return ret
-    
-    @property
-    def validFields(self):
-        ret = []
-        for m in self.public_fields:
-            if m.isNotSupported:
-                continue
-            ret.append(m)
-
-        return ret
-    
-    @property
-    def validConstructors(self):
-        if self.ns_full_name not in ConvertUtils.non_ref_classes:
-            return {}
-
-        validStaticMethods  = self.validStaticMethods
-        info = {}
-        i = 1
-        for m in self.constructors:
-            if m.isNotSupported:
-                continue
-
-            curName = 'new'
-            while True:
-                if curName in validStaticMethods or curName in info:
-                    curName = 'new%d' % i
-                    i += 1
-                else:
-                    break
-
-            info[curName] = m
-            m.lua_func_name = curName
-
-        return info
-
-    @staticmethod
-    def _is_method_in_parents(current_class, method_name):
-        if len(current_class.parents) > 0:
-            for m in current_class.parents[0].methods:
-                if method_name == m.name:
-                    return True
-            return NativeClass._is_method_in_parents(current_class.parents[0], method_name)
-        return False
-
+class NativeClass(NativeStruct):
     def _process_node(self, cursor):
-        '''
-        process the node, depending on the type. If returns true, then it will perform a deep
-        iteration on its children. Otherwise it will continue with its siblings (if any)
-
-        @param: cursor the cursor to analyze
-        '''
         if cursor.kind == cindex.CursorKind.CXX_BASE_SPECIFIER:
             parent = cursor.get_definition()
             parent_name = parent.displayname
@@ -143,92 +18,27 @@ class NativeClass(object):
         elif cursor.kind == cindex.CursorKind.CXX_ACCESS_SPEC_DECL:
             self._current_visibility = cursor.access_specifier
         elif self._current_visibility == cindex.AccessSpecifier.PUBLIC:
-            if cursor.kind == cindex.CursorKind.FIELD_DECL:
-                if NativeField.can_parse(cursor.type) and not self._shouldSkip(cursor.spelling):
-                    self.public_fields.append(NativeField(cursor))
-            elif cursor.kind == cindex.CursorKind.CXX_METHOD:
-                # skip if variadic
-                if ConvertUtils.get_availability(cursor) != ConvertUtils.AvailabilityKind.DEPRECATED and not cursor.type.is_function_variadic() and not self._shouldSkip(cursor.spelling):
-                    m = NativeFunction(cursor, self, False)
-                    if m.is_override:
-                        if NativeClass._is_method_in_parents(self, m.name):
-                            return
+            if cursor.kind in ConvertUtils.classOrStructMemberCursorKind:
+                self._parseMembers(cursor)
+            else:
+                ConvertUtils.tryParseTypes(cursor)
 
-                    if m.static:
-                        for mm in self.static_methods:
-                            if mm.isEqual(m):
-                                return
-                        self.static_methods.append(m)
-                    else:
-                        for mm in self.methods:
-                            if mm.isEqual(m):
-                                return
-                        self.methods.append(m)
-            elif cursor.kind == cindex.CursorKind.CONSTRUCTOR:
-                if ConvertUtils.isValidConstructor(cursor):
-                    self.constructors.append(NativeFunction(cursor, self, True))
-            elif cursor.kind == cindex.CursorKind.CLASS_DECL:
-                if ConvertUtils.isValidDefinition(cursor):
-                    nsName = ConvertUtils.get_namespaced_name(cursor)
-                    if ConvertUtils.isValidClassName(nsName) and nsName not in ConvertUtils.parsedClasses:
-                        ConvertUtils.parsedClasses[nsName] = NativeClass(cursor)
-            elif cursor.kind == cindex.CursorKind.STRUCT_DECL:
-                if ConvertUtils.isValidDefinition(cursor):
-                    nsName = ConvertUtils.get_namespaced_name(cursor)
-                    if nsName not in ConvertUtils.parsedStructs:
-                        ConvertUtils.parsedStructs[nsName] = NativeStruct(cursor)
-            elif cursor.kind == cindex.CursorKind.ENUM_DECL:
-                if ConvertUtils.isValidDefinition(cursor):
-                    nsName = ConvertUtils.get_namespaced_name(cursor)
-                    if nsName not in ConvertUtils.parsedEnums:
-                        ConvertUtils.parsedEnums[nsName] = NativeEnum(cursor)
-            elif cursor.kind == cindex.CursorKind.UNION_DECL:
-                ConvertUtils.parseCuorsor(cursor)
-            elif cursor.kind == cindex.CursorKind.VAR_DECL:
-                # class static var
-                # ax::Vec2::ONE
-                pass
-            elif cursor.kind not in ConvertUtils.notUsedClassMemberCursorKind:
-                print('@@@@@@@ error unhandled public type', cursor.kind, ConvertUtils.get_namespaced_name(cursor))
-
-    def testUseTypes(self, useTypes):
-        for field in self.public_fields:
-            field.testUseTypes(useTypes)
-        for method in self.methods:
-            method.testUseTypes(useTypes)
-        for method in self.static_methods:
-            method.testUseTypes(useTypes)
-
-    def containsType(self, typeName):
-        for field in self.public_fields:
-            if field.containsType(typeName):
-                return True
-            
-        for method in self.methods:
-            if method.containsType(typeName):
-                return True
-            
-        for method in self.static_methods:
-            if method.containsType(typeName):
-                return True
-            
-        if self.parents:
-            return self.parents[0].containsType(typeName)
-
-        return False
+    # override
+    def _parse(self):
+        print('parse class', self.ns_full_name)
+        for node in self.cursor.get_children():
+            self._process_node(node)
 
     @property
-    def luaNSName(self):
-        return ConvertUtils.nsNameToLuaName(self.ns_full_name)
+    def validFields(self):
+        ret = []
+        for m in self.public_fields:
+            if m.isNotSupported:
+                continue
+            ret.append(m)
 
-    @property
-    def luaClassName(self):
-        return ConvertUtils.transTypeNameToLua(self.ns_full_name)
+        return ret
 
-    @property
-    def cppRefName(self):
-        return self.ns_full_name.replace('::', '_')
-    
     @property
     def hasConstructor(self):
         if self.isRefClass:
@@ -241,5 +51,22 @@ class NativeClass(object):
 
     @property
     def isRefClass(self):
-        nsName = self.ns_full_name
-        return nsName not in ConvertUtils.non_ref_classes and nsName not in ConvertUtils.struct_classes
+        return self.ns_full_name not in ConvertUtils.non_ref_classes
+
+    @property
+    def isNotSupported(self):
+        # 创建的 class 都是要支持的
+        return False
+
+    def testUseTypes(self, useTypes):
+        for field in self.public_fields:
+            field.testUseTypes(useTypes)
+
+        for method in self.constructors:
+            method.testUseTypes(useTypes)
+
+        for method in self.static_methods:
+            method.testUseTypes(useTypes)
+
+        for method in self.methods:
+            method.testUseTypes(useTypes)

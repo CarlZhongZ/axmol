@@ -18,7 +18,7 @@
     #set structInfo = $parsedStructs[structType]
 -- struct:${structInfo.ns_full_name}
 ---@class ${structInfo.luaClassName}
-        #for m in structInfo.fields
+        #for m in structInfo.public_fields
 ${m.luaFieldDesc} @ field
         #end for
 #end for

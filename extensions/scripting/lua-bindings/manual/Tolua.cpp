@@ -28,6 +28,11 @@ void Tolua::init() {
     luaL_openlibs(_state);
     lua_module_register(_state);
 
+    lua_register(_state, "tolua_push_static_cpp_values", [](lua_State* L) {
+        pushStaticCppValues(L);
+        return 0;
+    });
+
     lua_register(_state, "tolua_on_restart", [](lua_State* L) {
         _pushValues.clear();
         return 0;
