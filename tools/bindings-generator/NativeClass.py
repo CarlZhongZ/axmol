@@ -5,22 +5,8 @@ class NativeClass(NativeStruct):
     # override
     def _parse(self):
         print('parse class', self.ns_full_name)
-        self.is_struct = False
+        self.is_cpp_struct = False
         self._commonParse()
-
-    @property
-    def hasConstructor(self):
-        if self.isRefClass:
-            return False
-
-        for m in self.constructors:
-            if not m.isNotSupported:
-                return True
-        return False
-
-    @property
-    def isRefClass(self):
-        return self.ns_full_name not in ConvertUtils.non_ref_classes
 
     @property
     def isNotSupported(self):

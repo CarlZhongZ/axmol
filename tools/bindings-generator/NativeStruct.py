@@ -1,5 +1,4 @@
 from clang import cindex
-import re
 
 import ConvertUtils
 from NativeType import NativeType
@@ -21,7 +20,8 @@ class NativeStruct(object):
         self.ns_full_name = ConvertUtils.get_namespaced_name(cursor)
 
         self.public_static_const_vars = []
-        self.is_struct = True
+        self.is_cpp_struct = True
+        self.type = NativeType.from_type_str(self.ns_full_name)
 
         self._parse()
 
@@ -32,7 +32,7 @@ class NativeStruct(object):
         if node.kind == cindex.CursorKind.FIELD_DECL:
             if not NativeField.can_parse(node.type):
                 return
-            if not self.is_struct or not self.customize_struct_info:
+            if not self.is_cpp_struct or not self.customize_struct_info:
                 self.public_fields.append(NativeField(node, None, None))
         elif node.kind == cindex.CursorKind.CXX_METHOD:
             if not ConvertUtils.isValidMethod(node):
@@ -122,8 +122,35 @@ class NativeStruct(object):
         return self.ns_full_name.replace('::', '_')
 
     @property
+    def isRefClass(self):
+        return not self.is_cpp_struct and self.ns_full_name not in ConvertUtils.non_ref_classes
+    
+    @property
+    def isStruct(self):
+        return self.is_cpp_struct
+
+    @property
+    def isClass(self):
+        return not self.is_cpp_struct
+
+    @property
+    def hasConstructor(self):
+        if self.isRefClass:
+            return False
+
+        for m in self.constructors:
+            if not m.isNotSupported:
+                return True
+        return False
+
+    @property
+    def isClassAndHasConstructor(self):
+        return not self.is_cpp_struct and self.hasConstructor
+
+    @property
     def validConstructors(self):
-        if self.ns_full_name not in ConvertUtils.non_ref_classes:
+        if self.isRefClass:
+            # ref class 内存由 cpp 管理， 无法在脚本 new
             return {}
 
         validStaticMethods  = self.validStaticMethods

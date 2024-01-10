@@ -532,8 +532,6 @@ def generateCode():
                                 searchList=[{
                                     'code_includes': parseConfig['code_includes'],
                                     'arrRegAllClassesOrStructs': arrRegAllClassesOrStructs,
-                                    'classTypes': classTypes,
-                                    'parsedClasses': parsedClasses,
                                 }])))
     
 
