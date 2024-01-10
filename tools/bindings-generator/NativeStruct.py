@@ -20,8 +20,8 @@ class NativeStruct(object):
         self.namespace_name = ConvertUtils.get_namespace_name(cursor)
         self.ns_full_name = ConvertUtils.get_namespaced_name(cursor)
 
-        self.customize_struct_info = None
         self.public_static_const_vars = []
+        self.is_struct = True
 
         self._parse()
 
@@ -30,7 +30,9 @@ class NativeStruct(object):
             return
 
         if node.kind == cindex.CursorKind.FIELD_DECL:
-            if not self.customize_struct_info and NativeField.can_parse(node.type):
+            if not NativeField.can_parse(node.type):
+                return
+            if not self.is_struct or not self.customize_struct_info:
                 self.public_fields.append(NativeField(node, None, None))
         elif node.kind == cindex.CursorKind.CXX_METHOD:
             if not ConvertUtils.isValidMethod(node):
@@ -68,8 +70,7 @@ class NativeStruct(object):
                 elif node.kind == cindex.CursorKind.VAR_DECL:
                     nt = NativeType.from_type(node.type)
                     if nt.is_const:
-                        # print('VAR_DECL', node.displayname, nt.fullCppDeclareTypeName)
-                        self.public_static_const_vars.append((ConvertUtils.get_namespaced_name(node), nt))
+                        self.public_static_const_vars.append((node.displayname, nt))
                 else:
                     ConvertUtils.tryParseTypes(node)
 
@@ -115,6 +116,10 @@ class NativeStruct(object):
     @property
     def luaClassName(self):
         return ConvertUtils.transTypeNameToLua(self.ns_full_name)
+
+    @property
+    def cppRefName(self):
+        return self.ns_full_name.replace('::', '_')
 
     @property
     def validConstructors(self):
@@ -173,5 +178,25 @@ class NativeStruct(object):
         return ret
 
     @property
-    def cppRefName(self):
-        return self.ns_full_name.replace('::', '_')
+    def validFields(self):
+        ret = []
+        for m in self.public_fields:
+            if m.isNotSupported:
+                continue
+            ret.append(m)
+
+        return ret
+
+    @property
+    def parentDeclare(self):
+        return self.ns_full_name.rsplit('::', 1)[0]
+
+    @property
+    def validStaticConstVars(self):
+        ret = []
+        for name, tp in self.public_static_const_vars:
+            if tp.isNotSupported:
+                continue
+            ret.append((name, tp))
+
+        return ret

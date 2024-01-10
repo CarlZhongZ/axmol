@@ -370,9 +370,8 @@ def tryParseTypes(cursor):
 def tryParseParent(cursor):
     if cursor.kind == cindex.CursorKind.CXX_BASE_SPECIFIER:
         parent = cursor.get_definition()
-        parent_name = parent.displayname
 
-        if parent_name:
+        if parent.displayname:
             parentNSName = get_namespaced_name(parent)
             if parentNSName not in parsedClasses:
                 parsedClasses[parentNSName] = NativeClass(parent)
@@ -467,15 +466,40 @@ def generateCode():
     classTypes = _getSortedClasses()
 
     f = open(os.path.abspath("../../app/Content/src/framework/declare_types/auto/engine_types.lua"), "wt+", encoding='utf8', newline='\n')
+    regAllClassesOrStructs = {}
+    arrRegAllClassesOrStructs = []
+    for tp in structTypes:
+        regAllClassesOrStructs[tp] = parsedStructs[tp]
+        arrRegAllClassesOrStructs.append(parsedStructs[tp])
+    for tp in classTypes:
+        regAllClassesOrStructs[tp] = parsedClasses[tp]
+        arrRegAllClassesOrStructs.append(parsedClasses[tp])
+
+    # 嵌套类型索引信息定义
+    declareSubTypeInfo = {}
+    for nsName in enumTypes:
+        enumInfo = parsedEnums[nsName]
+        parentDeclare = enumInfo.parentDeclare
+        if parentDeclare in regAllClassesOrStructs:
+            if parentDeclare not in declareSubTypeInfo:
+                declareSubTypeInfo[parentDeclare] = []
+            declareSubTypeInfo[parentDeclare].append(f'---@field {enumInfo.class_name} {enumInfo.luaClassName}Enum')
+
+    for nsName in structTypes:
+        info = parsedStructs[nsName]
+        parentDeclare = info.parentDeclare
+        if parentDeclare in regAllClassesOrStructs:
+            if parentDeclare not in declareSubTypeInfo:
+                declareSubTypeInfo[parentDeclare] = []
+            declareSubTypeInfo[parentDeclare].append(f'---@field {info.class_name} {info.luaClassName}S')
+
     f.write(str(Template(file='configs/engine_types.lua.tmpl',
                                 searchList=[{
+                                    'declareSubTypeInfo': declareSubTypeInfo,
+                                    'arrRegAllClassesOrStructs': arrRegAllClassesOrStructs,
                                     'luaGlobalVars': getLuaGlobalVarNames(),
                                     'enumTypes': enumTypes,
                                     'parsedEnums' :parsedEnums,
-                                    'structTypes': structTypes,
-                                    'parsedStructs': parsedStructs,
-                                    'classTypes': classTypes,
-                                    'parsedClasses': parsedClasses,
                                 }])))
 
     fEnum = open(os.path.abspath("../../app/Content/src/framework/declare_types/auto/engine_enums.lua"), "wt+", encoding='utf8', newline='\n')
@@ -485,10 +509,25 @@ def generateCode():
                                     'parsedEnums' :parsedEnums,
                                 }])))
 
-    # gen cpp audo code
-    fAutoGenCodesCpp = open(os.path.join(outdir, "lua_auto_gen_codes.cpp"), "wt+",
-                            encoding='utf8', newline='\n')
 
+
+    fAutoConvertCodes = open(os.path.join(outdir, "tolua_auto_convert.h"), "wt+", encoding='utf8', newline='\n')
+    fAutoConvertCodes.write(str(Template(file='configs/tolua_auto_convert.h.tmpl',
+                                searchList=[{
+                                    'code_includes': parseConfig['code_includes'],
+                                    'structTypes': structTypes,
+                                    'parsedStructs': parsedStructs,
+                                }])))
+    
+    fAutoConvertCodes = open(os.path.join(outdir, "tolua_auto_convert.cpp"), "wt+", encoding='utf8', newline='\n')
+    fAutoConvertCodes.write(str(Template(file='configs/tolua_auto_convert.cpp.tmpl',
+                                searchList=[{
+                                    'structTypes': structTypes,
+                                    'parsedStructs': parsedStructs,
+                                }])))
+
+    # gen cpp audo code
+    fAutoGenCodesCpp = open(os.path.join(outdir, "lua_auto_gen_codes.cpp"), "wt+", encoding='utf8', newline='\n')
     fAutoGenCodesCpp.write(str(Template(file='configs/lua_auto_gen_codes.cpp.tmpl',
                                 searchList=[{
                                     'code_includes': parseConfig['code_includes'],
@@ -497,23 +536,8 @@ def generateCode():
                                     'parsedStructs': parsedStructs,
                                     'parsedClasses': parsedClasses,
                                 }])))
-
-    fAutoConvertCodes = open(os.path.join(outdir, "tolua_auto_convert.h"), "wt+",
-                            encoding='utf8', newline='\n')
-    fAutoConvertCodes.write(str(Template(file='configs/tolua_auto_convert.h.tmpl',
-                                searchList=[{
-                                    'code_includes': parseConfig['code_includes'],
-                                    'structTypes': structTypes,
-                                    'parsedStructs': parsedStructs,
-                                }])))
     
-    fAutoConvertCodes = open(os.path.join(outdir, "tolua_auto_convert.cpp"), "wt+",
-                            encoding='utf8', newline='\n')
-    fAutoConvertCodes.write(str(Template(file='configs/tolua_auto_convert.cpp.tmpl',
-                                searchList=[{
-                                    'structTypes': structTypes,
-                                    'parsedStructs': parsedStructs,
-                                }])))
+
 
     # write test classes info
     fClassInfo = open(os.path.join("configs/classes.txt"), "wt+", encoding='utf8', newline='\n')

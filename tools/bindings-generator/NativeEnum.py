@@ -1,14 +1,6 @@
 from clang import cindex
-import sys
-import yaml
-import re
-import os
-import inspect
-import traceback
-from Cheetah.Template import Template
 
 import ConvertUtils
-from NativeType import NativeType
 
 class NativeEnum(object):
     def __init__(self, cursor):
@@ -43,3 +35,8 @@ class NativeEnum(object):
     @property
     def luaClassName(self):
         return ConvertUtils.transTypeNameToLua(self.ns_full_name)
+
+    @property
+    def parentDeclare(self):
+        return self.ns_full_name.rsplit('::', 1)[0]
+

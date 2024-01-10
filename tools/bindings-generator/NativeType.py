@@ -496,3 +496,10 @@ class NativeType(object):
     @property
     def isClassNoPointer(self):
         return self.is_class and self.is_pointer == 0
+
+    @property
+    def isRetParmType(self):
+        # 该函数参数的类型是否是作为返回类型
+        return not self.is_const and \
+                self.ns_full_name in ConvertUtils.parsedStructs and \
+                (self.is_pointer == 1 or self.is_reference == 1)

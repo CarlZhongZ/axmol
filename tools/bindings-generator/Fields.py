@@ -17,6 +17,7 @@ class NativeFunction(object):
         self.ret_type = NativeType.from_type(cursor.result_type)
         self.comment = self.get_comment(cursor.raw_comment)
         self.lua_func_name = None
+        self.is_const = cursor.is_const_method()
 
         # parse the arguments
         for arg in cursor.get_arguments():
@@ -88,18 +89,29 @@ class NativeFunction(object):
         else:
             ret = ['---@field %s fun(self: %s' % (self.lua_func_name, self.cls.luaClassName)]
 
-        for i in range(self.min_args):
-            s = '%s: %s' if i == 0 and isStatic else ', %s: %s'
-            ret.append(s % (self.argumtntTips[i] or 'p%d' % i, self.arguments[i].luaType))
+        if self.ret_type.isVoid:
+            retTypes = []
+        else:
+            retTypes = [self.ret_type.luaType]
+        i = 0
+        for arg in self.arguments:
+            if arg.isRetParmType:
+                retTypes.append(arg.luaType)
+                continue
 
-        for i in range(self.min_args, len(self.arguments)):
-            ret.append(', %s?: %s' % (self.argumtntTips[i] or 'p%d' % i, self.arguments[i].luaType))
+            if i > 0 or not self.isStatic:
+                ret.append(', ')
+            ret.append('%s: %s' % (self.argumtntTips[i] or 'p%d' % i, arg.luaType))
+            i += 1
         ret.append('): ')
 
         if self.is_constructor:
+            assert not retTypes
             ret.append(self.cls.luaClassName)
+        elif not retTypes:
+            ret.append('void')
         else:
-            ret.append(self.ret_type.luaType)
+            ret.append(', '.join(retTypes))
 
         return ''.join(ret)
 

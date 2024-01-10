@@ -15,6 +15,8 @@ NS_AX_BEGIN
 void tolua_get_value(lua_State* L, int loc, ${structInfo.ns_full_name} &value);
 
 void tolua_push_value(lua_State* L, const ${structInfo.ns_full_name} &value);
+
+void tolua_sync_value(lua_State* L, int loc, const ${structInfo.ns_full_name} &value);
 #end for
 
 NS_AX_END

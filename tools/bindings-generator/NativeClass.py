@@ -5,17 +5,8 @@ class NativeClass(NativeStruct):
     # override
     def _parse(self):
         print('parse class', self.ns_full_name)
+        self.is_struct = False
         self._commonParse()
-
-    @property
-    def validFields(self):
-        ret = []
-        for m in self.public_fields:
-            if m.isNotSupported:
-                continue
-            ret.append(m)
-
-        return ret
 
     @property
     def hasConstructor(self):
