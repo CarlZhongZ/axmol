@@ -531,9 +531,8 @@ def generateCode():
     fAutoGenCodesCpp.write(str(Template(file='configs/lua_auto_gen_codes.cpp.tmpl',
                                 searchList=[{
                                     'code_includes': parseConfig['code_includes'],
-                                    'structTypes': structTypes,
+                                    'arrRegAllClassesOrStructs': arrRegAllClassesOrStructs,
                                     'classTypes': classTypes,
-                                    'parsedStructs': parsedStructs,
                                     'parsedClasses': parsedClasses,
                                 }])))
     

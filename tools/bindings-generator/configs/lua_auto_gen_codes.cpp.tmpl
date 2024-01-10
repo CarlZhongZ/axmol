@@ -200,8 +200,7 @@ void Tolua::registerAutoCode()
     declare_ns("__tolua");
 
 #set target_ns = None
-#for clsType in $classTypes
-    #set cls = $parsedClasses[clsType]
+#for cls in $arrRegAllClassesOrStructs
     #if target_ns != cls.luaNSName
         #if target_ns != None
     declare_end();
@@ -218,6 +217,10 @@ void Tolua::registerAutoCode()
 
     declare_end();
     declare_end();
+}
+
+void Tolua::pushStaticCppValues(lua_State* L) {
+    
 }
 
 NS_AX_END
