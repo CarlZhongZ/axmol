@@ -435,7 +435,7 @@ class NativeType(object):
                                         'varName': varName,
                                         'bIsCppType': bIsCppType,
                                     }]))
-            else: 
+            else:
                 if bIsCppType and self.is_pointer == 1:
                     return 'tolua_push_value(L, *%s);' % (varName, )
                 else:

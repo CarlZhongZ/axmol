@@ -153,6 +153,14 @@ class NativeFunction(object):
         else:
             return self.name
 
+    @property
+    def isConstMethod(self):
+        return self.is_const
+    
+    @property
+    def isStaticMethod(self):
+        return self.static
+
 class NativeField(object):
     def __init__(self, cursor, fieldName, typeStr):
         if cursor:

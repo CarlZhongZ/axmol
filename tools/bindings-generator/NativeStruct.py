@@ -43,7 +43,7 @@ class NativeStruct(object):
                 if ConvertUtils.isMethodInParents(self, m.name):
                     return
 
-            if m.static:
+            if m.isStaticMethod:
                 for mm in self.static_methods:
                     if mm.isEqual(m):
                         return

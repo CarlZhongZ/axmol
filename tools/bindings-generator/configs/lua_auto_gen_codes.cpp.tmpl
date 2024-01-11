@@ -11,18 +11,16 @@ NS_AX_BEGIN
 
 
 #def parseFunctionArgs(cls, func)
-    #if func.is_constructor or func.static
+    #if func.is_constructor or func.isStaticMethod
         #set offset = 1
     #else
         #set offset = 2
-        #if cls.isClass
-    auto self = (${cls.ns_full_name}*) Tolua::toType(L, "${cls.luaClassName}", 1);
-    if (!self) {
-        return 0;
-    }
-        #else
     ${cls.type.genGetCode(1, "self", True)}
-        #end if
+    ##     #if cls.isClass
+    ## if (!self) {
+    ##     return 0;
+    ## }
+    ##     #end if
     #end if
 
     #set params = []
@@ -39,7 +37,7 @@ NS_AX_BEGIN
 
         #if tp.isRetParmType
             #silent retParams.append(('arg%d' % i , tp))
-    ${tp.cppDeclareTypeName} arg${i}
+    ${tp.cppDeclareTypeName} arg${i};
         #else
     ${tp.genGetCode(i + offset, 'arg%d' % i, True)}
         #end if
@@ -49,51 +47,38 @@ NS_AX_BEGIN
     #if func.is_constructor:
         #if cls.isClass:
     auto ret = new ${cls.ns_full_name}(${extraparms});
-    Tolua::pushType(L, (void*)ret , "${cls.luaClassName}");
-    return 1;
         #else:
-            ${cls.ns_full_name} ret(${extraparms});
-            tolua_push_value(L, ret);
+    ${cls.ns_full_name} ret${'(' + extraparms + ')' if params else ''};
         #end if
+    ${cls.type.genPushCode('ret', False)}
+    return 1;
     #else
-        ## todo... update none const struct fields
-        #if func.static:
+        #if func.isStaticMethod:
             #if func.ret_type.retCount == 0
     ${cls.ns_full_name}::${func.name}(${extraparms});
             #else
     auto ret = ${cls.ns_full_name}::${func.name}(${extraparms});
-    ${func.ret_type.genPushCode('ret', True)}
-            #end if
-            #set nReturns = func.ret_type.retCount + len(retParams)
-            #if nReturns > 0
-                #if len(retParams) > 0
-                    #for arg, tp in retParams:
-    ${tp.genPushCode(arg, False)}
-                    #end for
-                #end if
-    return ${nReturns};
-            #else
-    return 0;
             #end if
         #else
             #if func.ret_type.retCount == 0
-    self->${func.name}(${extraparms});
+    self${'->' if cls.isClass else '.'}${func.name}(${extraparms});
             #else
-    auto ret = self->${func.name}(${extraparms});
-    ${func.ret_type.genPushCode('ret', True)}
-            #end if
-            #set nReturns = func.ret_type.retCount + len(retParams)
-            #if nReturns > 0
-                #if len(retParams) > 0
-                    #for arg, tp in retParams:
-    ${tp.genPushCode(arg, False)}
-                    #end for
-                #end if
-    return ${nReturns};
-            #else
-    return 0;
+    auto ret = self${'->' if cls.isClass else '.'}${func.name}(${extraparms});
             #end if
         #end if
+        #if func.ret_type.retCount == 1
+    ${func.ret_type.genPushCode('ret', True)}
+        #end if
+        #if len(retParams) > 0
+            #for arg, tp in retParams:
+    ${tp.genPushCode(arg, False)}
+            #end for
+        #end if
+        #if cls.isStruct and not func.isStaticMethod and not func.isConstMethod
+            ## sync struct
+            tolua_sync_value(L, 1, self);
+        #end if
+    return ${func.ret_type.retCount + len(retParams)};
     #end if
 #end def
 
