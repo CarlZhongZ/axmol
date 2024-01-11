@@ -23,6 +23,11 @@ class NativeStruct(object):
         self.is_cpp_struct = True
         self.type = NativeType.from_type_str(self.ns_full_name)
 
+        customizeFieldsInfo = ConvertUtils.costomize_fields.get(self.ns_full_name)
+        if customizeFieldsInfo:
+            for fieldName, typeStr in customizeFieldsInfo.items():
+                self.public_fields.append(NativeField(None, fieldName, typeStr))
+
         self._parse()
 
     def _parseMembers(self, node):
@@ -32,8 +37,7 @@ class NativeStruct(object):
         if node.kind == cindex.CursorKind.FIELD_DECL:
             if not NativeField.can_parse(node.type):
                 return
-            if not self.is_cpp_struct or not self.customize_struct_info:
-                self.public_fields.append(NativeField(node, None, None))
+            self.public_fields.append(NativeField(node, None, None))
         elif node.kind == cindex.CursorKind.CXX_METHOD:
             if not ConvertUtils.isValidMethod(node):
                 return
@@ -78,11 +82,6 @@ class NativeStruct(object):
     def _parse(self):
         print('parse struct', self.ns_full_name)
         self._current_visibility = cindex.AccessSpecifier.PUBLIC
-        self.customize_struct_info = ConvertUtils.costomize_struct.get(self.ns_full_name)
-        
-        if self.customize_struct_info:
-            for fieldName, typeStr in self.customize_struct_info.items():
-                self.public_fields.append(NativeField(None, fieldName, typeStr))
 
         self._commonParse()
 

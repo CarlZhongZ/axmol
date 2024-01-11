@@ -263,15 +263,12 @@ for ns, names in parseConfig['ref_classes'].items():
         ref_classes.add(f'{ns}{name}')
 
 # 内存由 lua 管理， lua gc 的时候会将该对象内存销毁
-non_ref_classes = set()
-for ns, names in parseConfig['non_ref_classes'].items():
-    for name in names:
-        non_ref_classes.add(f'{ns}{name}')
+non_ref_classes = set(parseConfig['non_ref_classes'])
 
 # 将类对待成 struct
 struct_classes = set(parseConfig['struct_classes'])
 
-costomize_struct = parseConfig['costomize_struct']
+costomize_fields = parseConfig['costomize_fields']
 
 # 该类会在lua中被扩展，标记一个新的扩展类名供生成 lua 静态类型用
 custom_lua_class_info = set()

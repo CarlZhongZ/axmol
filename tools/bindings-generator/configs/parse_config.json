@@ -21,18 +21,18 @@
             "Sprite"
         ]
     },
-    "non_ref_classes": {
-        "ax::": ["PolygonInfo"]
-    },
-    "struct_classes": [
+    "non_ref_classes": [
         "ax::Vec2",
         "ax::Vec3",
         "ax::Vec4",
         "ax::Rect",
+        "ax::Quaternion",
         "ax::Mat4",
-        "ax::Quaternion"
+        "ax::PolygonInfo"
     ],
-    "costomize_struct": {
+    "struct_classes": [
+    ],
+    "costomize_fields": {
         "ax::Vec2": {
             "x": "float",
             "y": "float"
