@@ -26,14 +26,6 @@ void tolua_push_value(lua_State* L, const ${structInfo.ns_full_name} &value) {
     #end for
     luaL_setmetatable(L, "${structInfo.luaClassName}");
 }
-
-void tolua_sync_value(lua_State* L, int loc, const ${structInfo.ns_full_name} &value) {
-    if (loc < 0) loc -= 1;
-    #for field in structInfo.public_fields
-    ${field.ntype.genPushCode('value.%s' % field.name, True)}
-    lua_setfield(L, loc, "${field.name}");
-    #end for
-}
 #end for
 
 NS_AX_END

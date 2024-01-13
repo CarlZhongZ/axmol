@@ -82,7 +82,6 @@ class NativeStruct(object):
     def _parse(self):
         print('parse struct', self.ns_full_name)
         self._current_visibility = cindex.AccessSpecifier.PUBLIC
-
         self._commonParse()
 
     def testUseTypes(self, useTypes):
@@ -103,6 +102,10 @@ class NativeStruct(object):
 
     @property
     def isNotSupported(self):
+        if not self.is_cpp_struct:
+            # 创建的 class 都是要支持的
+            return False
+
         for field in self.public_fields:
             if field.isNotSupported:
                 return True

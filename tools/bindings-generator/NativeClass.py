@@ -7,21 +7,3 @@ class NativeClass(NativeStruct):
         print('parse class', self.ns_full_name)
         self.is_cpp_struct = False
         self._commonParse()
-
-    @property
-    def isNotSupported(self):
-        # 创建的 class 都是要支持的
-        return False
-
-    def testUseTypes(self, useTypes):
-        for field in self.public_fields:
-            field.testUseTypes(useTypes)
-
-        for method in self.constructors:
-            method.testUseTypes(useTypes)
-
-        for method in self.static_methods:
-            method.testUseTypes(useTypes)
-
-        for method in self.methods:
-            method.testUseTypes(useTypes)

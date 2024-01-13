@@ -155,8 +155,12 @@ class NativeFunction(object):
 
     @property
     def isConstMethod(self):
-        return self.is_const
+        return not self.isStatic and self.is_const
     
+    @property
+    def isNoneConstMethod(self):
+        return not self.isStatic and not self.is_const
+
     @property
     def isStaticMethod(self):
         return self.static

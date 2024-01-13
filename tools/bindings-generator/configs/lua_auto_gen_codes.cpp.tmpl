@@ -66,6 +66,12 @@ NS_AX_BEGIN
     auto ret = self${'->' if cls.isClass else '.'}${func.name}(${extraparms});
             #end if
         #end if
+        #if cls.isStruct and func.isNoneConstMethod
+            #set nSelfRet = 1
+    ${cls.type.genPushCode('self', False)}
+        #else
+            #set nSelfRet = 0
+        #end if
         #if func.ret_type.retCount == 1
     ${func.ret_type.genPushCode('ret', True)}
         #end if
@@ -74,11 +80,7 @@ NS_AX_BEGIN
     ${tp.genPushCode(arg, False)}
             #end for
         #end if
-        #if cls.isStruct and not func.isStaticMethod and not func.isConstMethod
-            ## sync struct
-            tolua_sync_value(L, 1, self);
-        #end if
-    return ${func.ret_type.retCount + len(retParams)};
+    return ${func.ret_type.retCount + len(retParams) + nSelfRet};
     #end if
 #end def
 

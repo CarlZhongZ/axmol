@@ -265,9 +265,6 @@ for ns, names in parseConfig['ref_classes'].items():
 # 内存由 lua 管理， lua gc 的时候会将该对象内存销毁
 non_ref_classes = set(parseConfig['non_ref_classes'])
 
-# 将类对待成 struct
-struct_classes = set(parseConfig['struct_classes'])
-
 costomize_fields = parseConfig['costomize_fields']
 
 # 该类会在lua中被扩展，标记一个新的扩展类名供生成 lua 静态类型用
@@ -314,9 +311,6 @@ def isMethodShouldSkip(nsName, methodName):
 
     return False
 
-def _isValidStructClassName(nsName):
-    return nsName in struct_classes
-
 def _isValidClassName(nsName):
     if nsName in non_ref_classes or nsName in ref_classes:
         return True
@@ -352,8 +346,6 @@ def tryParseTypes(cursor):
     if cursor.kind == cindex.CursorKind.CLASS_DECL:
         if _isValidClassName(nsName) and nsName not in parsedClasses:
             parsedClasses[nsName] = NativeClass(cursor)
-        elif _isValidStructClassName(nsName) and nsName not in parsedStructs:
-            parsedStructs[nsName] = NativeStruct(cursor)
         return True
     elif cursor.kind == cindex.CursorKind.STRUCT_DECL:
         if nsName not in parsedStructs:
