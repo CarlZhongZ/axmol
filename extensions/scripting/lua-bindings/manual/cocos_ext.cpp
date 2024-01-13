@@ -8,26 +8,6 @@
 using namespace std;
 using namespace ax;
 
-////////////////////////////////////////////////////////////////////////////////////////
-static int ccc3FromHex(lua_State *L) {
-	int n = luaL_checkinteger(L, 1);
-	GLubyte r = n >> 16 & 0xff;
-	GLubyte g = n >> 8 & 0xff;
-	GLubyte b = n & 0xff;
-	tolua_push_value(L, Color3B(r, g, b));
-	return 1;
-}
-
-static int ccc4FromHex(lua_State *L) {
-	int n = luaL_checkinteger(L, 1);
-	GLubyte r = n >> 16 & 0xff;
-	GLubyte g = n >> 8 & 0xff;
-	GLubyte b = n & 0xff;
-	tolua_push_value(L, Color4B(r, g, b, 0xff));
-	return 1;
-}
-
-//////////////////////////////////////////////////////
 static Size s_winSize;
 static float s_designWidth = 0.0f;
 static float s_designHeight = 0.0f;
@@ -231,32 +211,7 @@ static int ccext_node_set_position(lua_State *L) {
 	}
 }
 
-#if DEBUG_USE_CALC_REF_LEAK_DETECTION
-static int ccext_debug_print_ref_leaks(lua_State *L) {
-	lua_pushstring(L, Ref::printLeaks().c_str());
-	return 1;
-}
-
-static int ccext_debug_set_ignore_ref_info(lua_State *L) {
-    std::string key = luaL_checkstring(L, 1);
-    int count = luaL_checkint(L, 2);
-    Ref::addIgnoreInfo(key, count);
-    return 0;
-}
-
-static int ccext_debug_ref_set_desc(lua_State *L) {
-    auto ref = (Ref*)tolua_tousertype(L, 1, 0);
-    std::string key = luaL_checkstring(L, 1);
-    ref->setDescription(key);
-    return 0;
-}
-
-#endif
-
 void registerCocosExtCFunction(lua_State *L) {
-	lua_register(L, "ccc3FromHex", ccc3FromHex);
-	lua_register(L, "ccc4FromHex", ccc4FromHex);
-
 	lua_register(L, "ccext_update_design_resolution", ccext_update_design_resolution);
 	lua_register(L, "ccext_get_designed_size", ccext_get_designed_size);
 	lua_register(L, "ccext_get_scale", ccext_get_scale);
@@ -266,19 +221,4 @@ void registerCocosExtCFunction(lua_State *L) {
 	lua_register(L, "ccext_node_calc_pos", ccext_node_calc_pos);
 	lua_register(L, "ccext_node_set_content_size", ccext_node_set_content_size);
 	lua_register(L, "ccext_node_set_position", ccext_node_set_position);
-
-#if DEBUG_USE_CALC_REF_LEAK_DETECTION
-    lua_register(L, "ccext_debug_print_ref_leaks", ccext_debug_print_ref_leaks);
-    lua_register(L, "ccext_debug_set_ignore_ref_info", ccext_debug_set_ignore_ref_info);
-    lua_register(L, "ccext_debug_ref_set_desc", ccext_debug_ref_set_desc);
-#endif
-	
-	//cocos2d::Director::getInstance()->setSizeChangeCallback([](float w, float h) {
-	//	auto stack = LuaEngine::getInstance()->getLuaStack();
-	//	auto top = lua_gettop(stack->getLuaState());
-	//	stack->pushFloat(w);
-	//	stack->pushFloat(h);
-	//	stack->executeGlobalFunctionWithArgs("event_on_screen_size_changed", 2);
-	//	lua_settop(stack->getLuaState(), top);
-	//});
 }

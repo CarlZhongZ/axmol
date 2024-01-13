@@ -40,6 +40,8 @@ const ssize_t AX_INVALID_INDEX = -1;
 
 Color3B::Color3B() {}
 
+Color3B::Color3B(int color) : r(color >> 16 & 0xff), g(color >> 8 & 0xff), b(color & 0xff) {}
+
 Color3B::Color3B(uint8_t _r, uint8_t _g, uint8_t _b) : r(_r), g(_g), b(_b) {}
 
 Color3B::Color3B(const Color4B& color) : r(color.r), g(color.g), b(color.b) {}
@@ -81,6 +83,8 @@ bool Color3B::operator!=(const Color4F& right) const
  */
 
 Color4B::Color4B() {}
+
+Color4B::Color4B(int color) : a(color >> 24 & 0xff), r(color >> 16 & 0xff), g(color >> 8 & 0xff), b(color & 0xff) {}
 
 Color4B::Color4B(uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a) : r(_r), g(_g), b(_b), a(_a) {}
 

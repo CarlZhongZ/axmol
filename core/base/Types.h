@@ -54,6 +54,7 @@ struct HSV;
 struct AX_DLL Color3B
 {
     Color3B();
+    Color3B(int color);
     Color3B(uint8_t _r, uint8_t _g, uint8_t _b);
     explicit Color3B(const Color4B& color);
     explicit Color3B(const Color4F& color);
@@ -89,6 +90,7 @@ struct AX_DLL Color3B
 struct AX_DLL Color4B
 {
     Color4B();
+    Color4B(int color);
     Color4B(uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a);
     explicit Color4B(const Color3B& color, uint8_t _a = 255);
     Color4B(const Color4F& color);
