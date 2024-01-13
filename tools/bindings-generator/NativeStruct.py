@@ -155,6 +155,10 @@ class NativeStruct(object):
             # ref class 内存由 cpp 管理， 无法在脚本 new
             return {}
 
+        if not self.constructors and self.isStruct:
+            # 对于 struct 没有定义构造函数的给一个默认构造函数
+            self.constructors.append(NativeFunction(NativeFunction.noParamConstructorCursor, self, True))
+
         validStaticMethods  = self.validStaticMethods
         info = {}
         i = 1

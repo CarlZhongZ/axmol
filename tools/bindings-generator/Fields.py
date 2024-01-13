@@ -5,6 +5,8 @@ import ConvertUtils
 from NativeType import NativeType
 
 class NativeFunction(object):
+    noParamConstructorCursor = None
+
     def __init__(self, cursor, cls, bConstructor):
         self.cls = cls
         self.is_constructor = bConstructor
@@ -26,6 +28,9 @@ class NativeFunction(object):
         for arg in cursor.type.argument_types():
             nt = NativeType.from_type(arg)
             self.arguments.append(nt)
+
+        if NativeFunction.noParamConstructorCursor is None and bConstructor and not self.arguments:
+            NativeFunction.noParamConstructorCursor = cursor
 
         found_default_arg = False
         index = -1
@@ -89,10 +94,13 @@ class NativeFunction(object):
         else:
             ret = ['---@field %s fun(self: %s' % (self.lua_func_name, self.cls.luaClassName)]
 
-        if self.ret_type.isVoid:
-            retTypes = []
-        else:
-            retTypes = [self.ret_type.luaType]
+        retTypes = []
+        if self.isStructNoneConstMethod:
+            retTypes.append(self.cls.type.luaType)
+
+        if self.ret_type.retCount == 1:
+            retTypes.append(self.ret_type.luaType)
+
         i = 0
         for arg in self.arguments:
             if arg.isRetParmType:
@@ -105,6 +113,7 @@ class NativeFunction(object):
             i += 1
         ret.append('): ')
 
+        # return types
         if self.is_constructor:
             assert not retTypes
             ret.append(self.cls.luaClassName)
@@ -112,6 +121,18 @@ class NativeFunction(object):
             ret.append('void')
         else:
             ret.append(', '.join(retTypes))
+
+        # comment
+        ret.append('  @ ')
+        if self.is_constructor:
+            ret.append('constructor')
+        elif self.isStaticMethod:
+            ret.append('static method')
+        elif self.is_const:
+            ret.append('const method')
+        else:
+            ret.append('method')
+
 
         return ''.join(ret)
 
@@ -158,8 +179,8 @@ class NativeFunction(object):
         return not self.isStatic and self.is_const
     
     @property
-    def isNoneConstMethod(self):
-        return not self.isStatic and not self.is_const
+    def isStructNoneConstMethod(self):
+        return self.cls.isStruct and not self.isStatic and not self.is_const
 
     @property
     def isStaticMethod(self):
@@ -191,7 +212,7 @@ class NativeField(object):
         if self.isNotSupported:
             return
 
-        return '---@field %s %s' %  (self.name, self.ntype.luaType)
+        return '---@field %s %s  @ field' %  (self.name, self.ntype.luaType)
 
     @property
     def isNotSupported(self):

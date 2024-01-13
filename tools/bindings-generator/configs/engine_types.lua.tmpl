@@ -46,20 +46,28 @@ ${desc}
     #end for
     ## validConstructors
     #for _, m in classInfo.validConstructors.items()
-${m.luaFieldDesc} @ constructors
+${m.luaFieldDesc}
     #end for
     ## validStaticMethods
     #for _, m in classInfo.validStaticMethods.items()
-${m.luaFieldDesc} @ static method
+${m.luaFieldDesc}
     #end for
+    ## struct method is static methods
+    #if classInfo.isStruct
+        #for _, m in classInfo.validMethods.items()
+${m.luaFieldDesc}
+        #end for
+    #end if
 
 ---@class ${classInfo.luaClassName}${parentDesc}
     #for m in classInfo.validFields
-${m.luaFieldDesc} @ field
+${m.luaFieldDesc}
     #end for
-    #for _, m in classInfo.validMethods.items()
-${m.luaFieldDesc} @ ${'const ' if m.is_const else ''}method
-    #end for
+    #if not classInfo.isStruct
+        #for _, m in classInfo.validMethods.items()
+${m.luaFieldDesc}
+        #end for
+    #end if
 
 ---@type ${classInfo.luaClassName}S
 ${classInfo.luaClassName} = nil
