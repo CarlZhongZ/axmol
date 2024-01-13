@@ -28,6 +28,15 @@ void Tolua::init() {
     luaL_openlibs(_state);
     lua_module_register(_state);
 
+    lua_register(_state, "tolua_is_null", [](lua_State* L) {
+        if (lua_isuserdata(L, 1))
+        {
+            lua_pushboolean(L, *(void**)lua_touserdata(L, 1) == nullptr);
+            return 1;
+        }
+        return 0;
+    });
+
     lua_register(_state, "tolua_push_static_cpp_values", [](lua_State* L) {
         pushStaticCppValues(L);
         return 0;
@@ -272,7 +281,14 @@ void Tolua::removeRefObject(void* obj)
     lua_getfield(_state, LUA_REGISTRYINDEX, "__TOLUA_PUSH_DATA");  // __TOLUA_PUSH_DATA
     lua_geti(_state, -1, it->second);                              // __TOLUA_PUSH_DATA ud
 
-    // 移除 uservalue
+    // assin nullptr
+    *(void**)lua_touserdata(_state, -1) = nullptr;
+
+    // set mt nil
+    lua_pushnil(_state);
+    lua_setmetatable(_state, -2);
+
+    // set uservalue nil
     lua_pushnil(_state);
     lua_setuservalue(_state, -2);
     lua_pop(_state, 1);  // __TOLUA_PUSH_DATA

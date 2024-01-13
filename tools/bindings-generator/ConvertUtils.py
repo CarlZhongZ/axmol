@@ -454,7 +454,7 @@ def generateCode():
 
     classTypes = _getSortedClasses()
 
-    f = open(os.path.abspath("../../app/Content/src/framework/declare_types/auto/engine_types.lua"), "wt+", encoding='utf8', newline='\n')
+    f = open(os.path.abspath("../../app/Content/src/lua_ext/tolua/engine_types.lua"), "wt+", encoding='utf8', newline='\n')
     regAllClassesOrStructs = {}
     arrRegAllClassesOrStructs = []
     for tp in structTypes:
@@ -491,7 +491,7 @@ def generateCode():
                                     'parsedEnums' :parsedEnums,
                                 }])))
 
-    fEnum = open(os.path.abspath("../../app/Content/src/framework/declare_types/auto/engine_enums.lua"), "wt+", encoding='utf8', newline='\n')
+    fEnum = open(os.path.abspath("../../app/Content/src/lua_ext/tolua/engine_enums.lua"), "wt+", encoding='utf8', newline='\n')
     fEnum.write(str(Template(file='configs/engine_enums.lua.tmpl',
                                 searchList=[{
                                     'enumTypes': enumTypes,
