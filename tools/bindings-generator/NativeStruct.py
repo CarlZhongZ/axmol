@@ -233,3 +233,11 @@ class NativeStruct(object):
             ret.append((name, tp))
 
         return ret
+
+    @property
+    def decalreLuaClassName(self):
+        customizeName = ConvertUtils.custom_lua_class_info.get(self.ns_full_name)
+        if customizeName:
+            return ConvertUtils.transTypeNameToLua(self.namespace_name + customizeName)
+        else:
+            return self.luaClassName

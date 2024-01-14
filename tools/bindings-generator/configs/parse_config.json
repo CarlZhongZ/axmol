@@ -42,7 +42,7 @@
         "ax::GLViewImpl": ["loadGLES2"]
     },
     "custom_lua_class_info": {
-        "ax::": ["Node"]
+        "ax::Node": "_Node"
     },
     "string_types": {
         "std::basic_string<char>": "String",

@@ -32,7 +32,7 @@ ${enumInfo.luaClassName} = nil
         #set parentDescS = ': ' + classInfo.parents[0].luaClassName + 'S'
         #set parentDesc = ': ' + classInfo.parents[0].luaClassName
     #end if
----@class ${classInfo.luaClassName}S${parentDescS}
+---@class ${classInfo.decalreLuaClassName}S${parentDescS}
     ## sub types
     #set arrDeclareInfo = $declareSubTypeInfo.get(classInfo.ns_full_name)
     #if arrDeclareInfo
@@ -59,7 +59,7 @@ ${m.luaFieldDesc}
         #end for
     #end if
 
----@class ${classInfo.luaClassName}${parentDesc}
+---@class ${classInfo.decalreLuaClassName}${parentDesc}
     #for m in classInfo.validFields
 ${m.luaFieldDesc}
     #end for

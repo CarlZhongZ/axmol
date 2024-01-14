@@ -268,10 +268,7 @@ non_ref_classes = set(parseConfig['non_ref_classes'])
 costomize_fields = parseConfig['costomize_fields']
 
 # 该类会在lua中被扩展，标记一个新的扩展类名供生成 lua 静态类型用
-custom_lua_class_info = set()
-for ns, names in parseConfig['custom_lua_class_info'].items():
-    for name in names:
-        custom_lua_class_info.add(f'{ns}{name}')
+custom_lua_class_info = parseConfig['custom_lua_class_info']
 
 # c++ 的类对应的 String lua 类型
 string_types = parseConfig['string_types']
