@@ -26,8 +26,8 @@ ${enumInfo.luaClassName} = nil
 #for classInfo in $arrRegAllClassesOrStructs
 
 -- ${classInfo.ns_full_name}
-    #set parentDescS = ''
-    #set parentDesc = ''
+    #set parentDescS = ': NativeType'
+    #set parentDesc = ': NativeType'
     #if classInfo.parents
         #set parentDescS = ': ' + classInfo.parents[0].luaClassName + 'S'
         #set parentDesc = ': ' + classInfo.parents[0].luaClassName
