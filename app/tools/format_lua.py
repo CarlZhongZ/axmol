@@ -16,12 +16,15 @@ def formatLua(fPath):
         if mFunction:
             prefixSpace = mFunction.group(1)
             parms = {}
+            arrParms = []
             ret = None
             while len(lines) > 0 and re.search(r'^\s*---@', lines[-1]) and not re.search(r'^\s*---@generic', lines[-1]):
                 preline = lines.pop()
                 mParam = re.match(f'^\\s*---@param ([^ ]+) (.+)$', preline)
                 if mParam:
-                    parms[mParam.group(1)] = mParam.group(2)
+                    tp = mParam.group(2)
+                    parms[mParam.group(1)] = tp
+                    arrParms.append(tp)
                 mReturn = re.match(f'^\\s*---@return (.+)$', preline)
                 if mReturn:
                     ret = mReturn.group(1)
@@ -32,13 +35,15 @@ def formatLua(fPath):
             # print(mFunction.group(0))
             parmsStr = mFunction.group(4)
             if parmsStr:
-                for p in mFunction.group(4).split(','):
+                for i, p in enumerate(mFunction.group(4).split(',')):
                     p = p.strip()
                     if p == '...':
                         continue
                     tp = parms.get(p) or parms.get(p + '?')
                     if tp is None:
-                        if p.startswith('b'):
+                        if i < len(arrParms):
+                            tp = arrParms[i]
+                        elif p.startswith('b'):
                             tp = 'boolean'
                         elif p.startswith('n'):
                             tp = 'number'
