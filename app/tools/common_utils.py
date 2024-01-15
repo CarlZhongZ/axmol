@@ -33,7 +33,6 @@ def get_cur_file_dir(file=None):
     return os.path.abspath(curDir)
 
 config_tool_path = os.path.join(get_cur_file_dir(), 'external_tools')
-assert os.path.isdir(config_tool_path)
 
 def get_valid_file_name(fileName):
     return re.sub(r'[:?,\\/*"<>| ]+', '', fileName)

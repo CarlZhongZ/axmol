@@ -6,69 +6,70 @@ from optparse import OptionParser
 import base64
 import json
 
+import common_utils
+
 def returnResult(v):
     # print(v)
     print(base64.b64encode(json.dumps(v).encode('u8')).decode('u8'))
 
-class Utils:
-    @staticmethod
-    def getSaveFilePath(title, initialdir, initialfile, filetypes):
-        root = Tk()
-        root.withdraw()  # 隐藏根窗口
+def getSaveFilePath(title, initialdir, initialfile, filetypes):
+    root = Tk()
+    root.withdraw()  # 隐藏根窗口
 
-        options = {
-            'title': title,
-            'initialdir': initialdir,
-            'initialfile': initialfile,
-            'filetypes': filetypes,
-        }
+    options = {
+        'title': title,
+        'initialdir': initialdir,
+        'initialfile': initialfile,
+        'filetypes': filetypes,
+    }
 
-        filePath = filedialog.asksaveasfilename(**options)
+    filePath = filedialog.asksaveasfilename(**options)
 
-        returnResult(filePath)
+    returnResult(filePath)
 
-    @staticmethod
-    def getSelectedFilePath(title, initialdir, initialfile, bMultiple, filetypes):
-        # 配置对话框选项
-        options = {
-            'title': title,  # 对话框标题
-            'initialdir': initialdir,
-            'initialfile': initialfile,
-            'multiple': bMultiple,  # 允许选择多个文件
-            'filetypes': filetypes,
-        }
+def getSelectedFilePath(title, initialdir, initialfile, bMultiple, filetypes):
+    # 配置对话框选项
+    options = {
+        'title': title,  # 对话框标题
+        'initialdir': initialdir,
+        'initialfile': initialfile,
+        'multiple': bMultiple,  # 允许选择多个文件
+        'filetypes': filetypes,
+    }
 
-        # 弹出文件选择对话框
-        returnResult(filedialog.askopenfilenames(**options))
+    # 弹出文件选择对话框
+    returnResult(filedialog.askopenfilenames(**options))
 
-    @staticmethod
-    def getSaveDirectory(title, initialdir):
-        root = Tk()
-        root.withdraw()  # 隐藏根窗口
+def getSaveDirectory(title, initialdir):
+    root = Tk()
+    root.withdraw()  # 隐藏根窗口
 
-        options = {
-            'title': title,
-            'initialdir': initialdir,
-        }
+    options = {
+        'title': title,
+        'initialdir': initialdir,
+    }
 
-        directory_path = filedialog.askdirectory(**options)
+    directory_path = filedialog.askdirectory(**options)
 
-        returnResult(directory_path)
+    returnResult(directory_path)
 
-    @staticmethod
-    def chooseColor(title, initialcolor):
-        color = colorchooser.askcolor(title=title, initialcolor=initialcolor)
-        
-        if color != (None, None):
-            returnResult(color)
-        else:
-            returnResult('')
-            
+def chooseColor(title, initialcolor):
+    color = colorchooser.askcolor(title=title, initialcolor=initialcolor)
+    
+    if color != (None, None):
+        returnResult(color)
+    else:
+        returnResult('')
 
 
-    @staticmethod
-    def test(p1, p2, p3):
-        returnResult(['@', p1, p2, p3])
+import format_lua
+def on_edit_file_changed(fPath, languageId):
+    if languageId != 'lua':
+        return
+    format_lua.formatLua(fPath)
+
+def test(p1, p2, p3):
+    returnResult(['@', p1, p2, p3])
 
 
 # title = 'Save File'
@@ -98,10 +99,10 @@ def test():
     initialfile = 'test'
     bMultiple = True
     filetypes = [('Text Files', '.*')]
-    # Utils.getSaveFilePath(title, initialdir, initialfile, filetypes)
-    # Utils.getSelectedFilePath(title, initialdir, initialfile, bMultiple, filetypes)
-    # Utils.getSaveDirectory(title, initialdir, False)
-    Utils.chooseColor(title, '#ffff00')
+    # getSaveFilePath(title, initialdir, initialfile, filetypes)
+    # getSelectedFilePath(title, initialdir, initialfile, bMultiple, filetypes)
+    # getSaveDirectory(title, initialdir, False)
+    chooseColor(title, '#ffff00')
 
 
 def main():
@@ -113,7 +114,7 @@ def main():
 
     callInfo = json.loads(base64.b64decode(base64data).decode('u8'))
 
-    getattr(Utils, callInfo['functionName'])(*callInfo['args'])
+    globals()[callInfo['functionName']](*callInfo['args'])
 
 if __name__ == '__main__':
     # test()
