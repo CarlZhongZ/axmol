@@ -1,6 +1,7 @@
 import re
 
 import common_utils
+import lua_utils
 
 
 reFuncName = r'[a-zA-Z0-9_]+'
@@ -15,22 +16,7 @@ def formatLua(fPath):
         mFunction = re.match(reFuncDeclare, line)
         if mFunction:
             prefixSpace = mFunction.group(1)
-            parms = {}
-            arrParms = []
-            ret = None
-            while len(lines) > 0 and re.search(r'^\s*---@', lines[-1]) and not re.search(r'^\s*---@generic', lines[-1]):
-                preline = lines.pop()
-                mParam = re.match(f'^\\s*---@param ([^ ]+) (.+)$', preline)
-                if mParam:
-                    tp = mParam.group(2)
-                    parms[mParam.group(1)] = tp
-                    arrParms.append(tp)
-                mReturn = re.match(f'^\\s*---@return (.+)$', preline)
-                if mReturn:
-                    ret = mReturn.group(1)
-
-            if ret is None:
-                ret = 'void'
+            parms, arrParms, ret = lua_utils.parseFuncDesc(lines)
 
             # print(mFunction.group(0))
             parmsStr = mFunction.group(4)
@@ -42,7 +28,7 @@ def formatLua(fPath):
                     tp = parms.get(p) or parms.get(p + '?')
                     if tp is None:
                         if i < len(arrParms):
-                            tp = arrParms[i]
+                            tp = arrParms[i][1]
                         elif p.startswith('b'):
                             tp = 'boolean'
                         elif p.startswith('n'):
