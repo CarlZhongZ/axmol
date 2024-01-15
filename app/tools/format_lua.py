@@ -5,7 +5,7 @@ import common_utils
 
 reFuncName = r'[a-zA-Z0-9_]+'
 reClassFuncName = f'[a-zA-Z0-9]+:{reFuncName}'
-reFuncParms = r'\s*\((.+)\)\s*$'
+reFuncParms = r'\s*\((.*)\)\s*$'
 reFuncDeclare = f'^(\\s*)(local\\s+)?function\\s+({reClassFuncName}|{reFuncName}){reFuncParms}'
 
 def formatLua(fPath):
@@ -30,25 +30,27 @@ def formatLua(fPath):
                 ret = 'void'
 
             # print(mFunction.group(0))
-            for p in mFunction.group(4).split(','):
-                p = p.strip()
-                if p == '...':
-                    continue
-                tp = parms.get(p) or parms.get(p + '?')
-                if tp is None:
-                    if p.startswith('b'):
-                        tp = 'boolean'
-                    elif p.startswith('n'):
-                        tp = 'number'
-                    elif p.startswith('s'):
-                        tp = 'String'
-                    elif p.startswith('arr'):
-                        tp = 'any[]'
-                    else:
-                        tp = 'any'
+            parmsStr = mFunction.group(4)
+            if parmsStr:
+                for p in mFunction.group(4).split(','):
+                    p = p.strip()
+                    if p == '...':
+                        continue
+                    tp = parms.get(p) or parms.get(p + '?')
+                    if tp is None:
+                        if p.startswith('b'):
+                            tp = 'boolean'
+                        elif p.startswith('n'):
+                            tp = 'number'
+                        elif p.startswith('s'):
+                            tp = 'String'
+                        elif p.startswith('arr'):
+                            tp = 'any[]'
+                        else:
+                            tp = 'any'
 
 
-                lines.append(f'{prefixSpace}---@param {p} {tp}\n')
+                    lines.append(f'{prefixSpace}---@param {p} {tp}\n')
             lines.append(f'{prefixSpace}---@return {ret}\n')
 
         lines.append(line)
@@ -57,5 +59,6 @@ def formatLua(fPath):
 
 
 if __name__ == '__main__':
-    fp = r'C:\projects\axmol\app\Content\src\test.lua'
+    
+    fp = r'C:\Users\zhongzuya\Desktop\axmol\app\Content\src\logic\test.lua'
     formatLua(fp)
