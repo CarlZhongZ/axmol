@@ -5,20 +5,16 @@ from Cheetah.Template import Template
 import common_utils
 import lua_utils
 
-reFuncName = r'[a-zA-Z0-9_]+'
-reFuncParms = r'\s*\((.*)\)\s*$'
-reFuncDeclare = f'^(\\s*)function\\s+({reFuncName}){reFuncParms}'
-
 _mInfo = {}
 def _parseModuleInfo(className, fp: str):
     desc = [f'---@class {className}']
     lines = []
     for line in common_utils.read_utf8_file_lines(fp):
-        mFunction = re.match(reFuncDeclare, line)
+        mFunction = re.match(lua_utils.reGlobalFuncDeclare, line)
         if not mFunction:
             lines.append(line)
             continue
-        
+
         _, arrParms, ret = lua_utils.parseFuncDesc(lines)
         funDesc = ['---@field ', mFunction.group(2), ' fun(']
         for i, (name, tp) in enumerate(arrParms):
@@ -58,13 +54,8 @@ if __name__ == '__main__':
     with common_utils.pushd('../Content/src'):
         for d in os.listdir(os.getcwd()):
             _parse(d)
-    # print(_mInfo)
-
-    # for k in _mInfo.keys():
-    #     print(k, _mInfo[k])
 
     outPutPath = os.path.abspath('../Content/src/lua_ext/module_manager.lua')
     common_utils.write_utf8_file_content(outPutPath, str(Template(file='config/module_manager.lua.tmpl', searchList=[{
-        # 'keys': _mInfo.keys(),
         'mInfo': _mInfo,
     }])))

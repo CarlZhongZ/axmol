@@ -14,7 +14,6 @@ import requests
 import gzip
 import subprocess
 import zipfile
-from importlib import import_module
 from io import StringIO
 
 import ssl
@@ -1552,7 +1551,7 @@ def write_utf8_file_content(path, content):
         f.write(content)
     assert os.path.isfile(path)
 
-def read_utf8_file_lines(path):
+def read_utf8_file_lines(path: str) -> list[str]:
     assert os.path.isfile(path), path
     ret = []
     with open(path, 'r', encoding='utf-8') as f:

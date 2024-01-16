@@ -64,9 +64,8 @@ def chooseColor(title, initialcolor):
 
 import format_lua
 def on_edit_file_changed(fPath, languageId):
-    if languageId != 'lua':
-        return
-    format_lua.formatLua(fPath)
+    if languageId == 'lua':
+        format_lua.formatLua(fPath)
 
 def test(p1, p2, p3):
     returnResult(['@', p1, p2, p3])
