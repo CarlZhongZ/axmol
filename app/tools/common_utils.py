@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+import locale
 import os
 import shutil
 import re
@@ -914,10 +915,7 @@ def execCmd(cmd):
     # retcode = p.returncode
 
     # print(result, error)
-    try:
-        return result.decode('utf-8')
-    except:
-        return result
+    return result.decode(locale.getpreferredencoding())
 
 def exec_cmd(cmd, cwd=None):
     if cwd is None:
